@@ -1,0 +1,94 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    margin: 20;
+}
+
+div.wrap {
+    max-width:996px;
+    margin:0 auto;
+}
+
+td {
+    padding: 10px;
+}
+
+fieldset {
+    border:1px solid #999;
+	border-radius:8px;
+}
+
+input:disabled {
+  background: #dddddd;
+}
+
+legend {
+    background: white;
+}
+
+.email_input {
+
+}
+
+#dialog {
+    background: white;
+    max-width: 50%;
+    padding: 20px;
+    border: 1px solid black;
+    z-index: 2000; /* absurdly high number to appear in front of leaflet control */
+}
+
+#submit_errors {
+    color: red;
+}
+
+.icon {
+   height: 20px;
+   vertical-align: middle;
+   margin-left: 5px;
+}
+
+.flex-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.flex-container-vertical {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.banner-image {
+    border: 1px solid black;
+    width: 256px;
+    height: 128px;
+    float: right;
+}
+
+table#jobtable {
+  border-collapse: collapse;
+}
+
+table#jobtable td {
+  border: 1px solid black;
+  padding: 5px;
+}
+
+table#jobtable th {
+  border: 1px solid black;
+  padding: 5px;
+}
+
+.footer_image {
+    margin: 5px;
+    height: 48px;
+}
+
+.footer {
+  flex-grow: 0;
+  align-content: flex-end;
+  text-align: center;
+}

@@ -1,0 +1,321 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'/>
+    <link href="/css/style.css" type="text/css" rel="stylesheet"/>
+    <script type="text/javascript" src="/js/app.js"></script>
+    <title>{{title}}</title>
+    <script type="text/javascript">
+        // template parameters that are substituted into global variables when the page is served
+        var job_type = "{{job_type}}";
+        var start_year = {{start_year}};
+        var start_month = {{start_month}};
+        var end_year = {{end_year}};
+        var end_month = {{end_month}};
+        var default_start_year = {{default_start_year}};
+        var default_start_month = {{default_start_month}};
+        var default_end_year = {{default_end_year}};
+        var default_end_month = {{default_end_month}};
+    </script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+          integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+          crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+            integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+            crossorigin=""></script>
+</head>
+<body>
+<div class="wrap">
+    <div class="flex-container-vertical">
+        <div class="flex-container">
+            <a href="/"><img class="home_image" style="width:64px;" src="/images/home.svg" alt="home icon" style=margin-left:20px;" class="banner-image"/></a>
+            <div><h1>{{title}}</h1><h2>{{subtitle}}</h2></div>
+            <img src="/images/eocis-logo.png" alt="EOCIS logo" style=margin-left:20px;" class="banner-image"/>
+        </div>
+        <div>
+            <h2></h2>
+            <p>
+                {{summary}}
+            </p>
+            <p>
+                You may use this page to request data from the <a href="https://eocis.org">EOCIS data store</a>.
+            </p>
+            <p>
+                This service is supported by the National Centre for Earth Observation (<a target="_blank" href="https://www.nceo.ac.uk">www.nceo.ac.uk</a>).
+            </p>
+            <p>
+                {{output_formats}}
+            </p>
+            <ol>
+                <li>Enter a submitter reference.</li>
+                <li>Define parameters for your {{service_name}} job.</li>
+                <li>Submit the request.</li>
+            </ol>
+            <p>
+                * You may also check on the status of your jobs and get the download links for any completed jobs,
+                by returning to this page, by entering your submitter reference into the form below and pressing the
+                <em>Show My Current Jobs</em> button.
+            </p>
+            <p>
+                Click on the<img class="icon" src="/images/help.svg" alt="help icon"/>s for additional
+                explanation.
+            </p>
+        </div>
+
+        <div id="dialog" style="display:none;">
+            <button id="dialog_content_close" style="margin-right:10px;">X</button>
+            <span id="dialog_content">Content</span>
+        </div>
+
+        <div id="form">
+            <fieldset id="e_mail">
+                <legend>Submitter Reference</legend>
+                <p><input class="email_input" name="submitter_id" id="submitter_id" tstyle="width:400px;"
+                          value=""
+                          required/>
+                    <span style="margin-left:20px;">
+                        <button id="view_btn" style="margin-left:20px;" disabled>Show My Current Jobs</button>
+                    </span>
+                </p>
+                <fieldset id="joblist" style="display:none;margin-top:30px;">
+                    <legend>My Current Jobs
+                        <button id="refresh_btn" style="margin-left:20px;">Refresh Now</button>
+                    </legend>
+                    <p id="nojobs" style="display:none;">No Jobs Found</p>
+                    <table id="jobtable" style="display:none;">
+                        <thead>
+                        <tr>
+                            <th>Job ID</th>
+                            <th>Submitted</th>
+                            <th>Status</th>
+                            <th>Completion</th>
+                            <th>Expiry</th>
+                        </tr>
+                        </thead>
+                        <tbody id="jobtablebody">
+                        </tbody>
+                    </table>
+                    <p>
+                        View refreshes every 10 minutes. Running Jobs Count (For All Users): <span
+                            id="running_jobs">0</span>
+                    </p>
+                </fieldset>
+            </fieldset>
+            <fieldset id="parameters">
+                <legend>Job Parameters</legend>
+
+                <table>
+                    <tr>
+                        <td><label class="mainlabel" for="time_step" id="time_step_label">Time Resolution</label></td>
+                        <td>
+                            <select name="time_step" id="time_step">
+                            </select>
+                        </td>
+                        <td colspan="2">
+                            <div id="n_daily_step_group">
+                                <label for="n_daily_step" id="n_daily_step_label">N-day period</label>
+                                <input type="number" name="n_daily_step" id="n_daily_step" min="1" max="365" value="5"/>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr id="longitude_step_group">
+                        <td><label class="mainlabel" for="longitude_step" id="longitude_step_label">Spatial Resolution -
+                            Longitude (degrees)</label></td>
+                        <td colspan="2">
+                            <select name="longitude_step" id="longitude_step">
+                            </select>
+                        </td>
+                    </tr>
+                    <tr id="latitude_step_group">
+                        <td><label class="mainlabel" for="latitude_step" id="latitude_step_label">Spatial Resolution -
+                            Latitude
+                            (degrees)</label></td>
+                        <td colspan="2">
+                            <select name="latitude_step" id="latitude_step">
+                            </select>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <label class="mainlabel" for="start_date_year" id="start_date_label">Start Date</label>
+                        </td>
+                        <td colspan="2">
+                            <label class="mainlabel" for="start_date_year" id="start_date_year_label">Year</label>
+                            <select name="start_date_year" id="start_date_year">
+                            </select>
+
+                            <span id="start_month_controls"><label style="margin-left:20px;" class="mainlabel"
+                                                                   for="start_date_month"
+                                                                   id="start_date_month_label">Month</label>
+                        <select name="start_date_year" id="start_date_month">
+                        </select>
+                        </span>
+
+                            <span id="start_day_controls"><label style="margin-left:20px;" class="mainlabel"
+                                                                 for="start_date_day" id="start_date_day_label">Day</label>
+                        <select name="start_date_year" id="start_date_day">
+                        </select>
+                        </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label class="mainlabel tooltip" for="end_date_year" id="end_date_label">End Date</label>
+                        </td>
+                        <td colspan="2">
+                            <label class="mainlabel" for="end_date_year" id="end_date_year_label">Year</label>
+                            <select name="end_date_year" id="end_date_year">
+                            </select>
+
+                            <span id="end_month_controls"><label style="margin-left:20px;" class="mainlabel"
+                                                                 for="end_date_month"
+                                                                 id="end_date_month_label">Month</label>
+                        <select name="end_date_year" id="end_date_month">
+                        </select>
+                        </span>
+
+                            <span id="end_day_controls"><label style="margin-left:20px;" class="mainlabel"
+                                                               for="end_date_day" id="end_date_day_label">Day</label>
+                        <select name="end_date_year" id="end_date_day">
+                        </select>
+                        </span>
+                        </td>
+                    </tr>
+
+                    <tr id="bounding_box_longitude_group_row1">
+                        <td><label class="mainlabel" for="bounding_box_longitude_centre" id="bounding_box_longitude_centre_label">Longitude
+                            of bounding box (degrees east)</label></td>
+                        <td><input type="number" value="0" min="-180" max="180" step="any"
+                                   id="bounding_box_longitude_centre"/></td>
+                        <td id="bounding_box_map_group" rowspan="4">
+                            <div id="bounding_box_map" style="width:400px;height:250px;"></div>
+                        </td>
+                    </tr>
+                    <tr id="bounding_box_latitude_group_row1">
+                        <td><label class="mainlabel" for="bounding_box_latitude_centre" id="bounding_box_latitude_centre_label">Latitude
+                            of bounding box (degrees north)</label></td>
+                        <td><input type="number" value="0" min="-180" max="180" step="any" id="bounding_box_latitude_centre"/>
+                        </td>
+                    </tr>
+                    <tr id="bounding_box_longitude_group_row2">
+                        <td><label class="mainlabel" for="bounding_box_longitude_width"
+                                   id="bounding_box_longitude_width_label">Width in degrees</label></td>
+                        <td><input type="number" value="2" min="0.05" step="0.05" id="bounding_box_longitude_width"/>
+                        </td>
+                    </tr>
+                    <tr id="bounding_box_latitude_group_row2">
+                        <td><label class="mainlabel" for="bounding_box_latitude_height"
+                                   id="bounding_box_latitude_height_label">Height in degrees</label></td>
+                        <td><input type="number" value="2" min="0.05" step="0.05" id="bounding_box_latitude_height"/>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <label for="exclude_sea_ice" id="exclude_sea_ice_label">Exclude data above sea ice
+                                threshold</label>
+                        </td>
+                        <td>
+                            <input type="checkbox" id="exclude_sea_ice" name="exclude_sea_ice" checked/>
+                        </td>
+                        <td colspan="1">
+                            <div id="sea_ice_threshold_group">
+                                <label for="sea_ice_threshold" id="sea_ice_threshold_label">Sea Ice Exclusion Threshold
+                                    %</label>
+                                <input type="number" value="100" id="sea_ice_threshold" name="sea_ice_threshold" max="100"
+                                       min="0" step="1"/>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="include_bias_adjustments" id="include_bias_adjustments_label">Include post-hoc SST
+                                bias adjustments</label>
+                        </td>
+                        <td colspan="2">
+                            <input type="checkbox" id="include_bias_adjustments" name="bias_adjustments" checked/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label for="anomaly_or_absolute" id="anomaly_or_absolute_label">Generate Absolute SST or
+                            Anomaly</label></td>
+                        <td colspan="2">
+                            <select id="anomaly_or_absolute" name="anomaly_or_absolute">
+                                <option value="anomaly">Anomaly</option>
+                                <option value="absolute" selected="selected">Absolute</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="generate_sea_ice_fraction" id="generate_sea_ice_fraction_label">Generate sea-ice
+                                fraction</label>
+                        </td>
+                        <td colspan="2">
+                            <input type="checkbox" id="generate_sea_ice_fraction" name="generate_sea_ice_fraction" checked/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label for="tau" id="tau_label">Error Correlation in Time (Days)</label></td>
+                        <td colspan="2"><input type="number" min="1" max="14" step="1" id="tau" name="tau" value="7"/></td>
+                    </tr>
+                    <tr id="spatial_lambda_group">
+                        <td>
+                            <label for="spatial_lambda" id="spatial_lambda_label">Error Correlation In Space
+                                (Degrees)</label>
+                        </td>
+                        <td colspan="2">
+                            <input type="number" id="spatial_lambda" name="spatial_lambda" min="0.05" value="3.0"
+                                   step="0.05"/>
+                        </td>
+                    </tr>
+                    <tr id="timeseries_output_format_group">
+                        <td><label for="timeseries_output_format" id="timeseries_output_format_label">Output file
+                            format</label></td>
+                        <td colspan="2">
+                            <select id="timeseries_output_format" name="timeseries_output_format">
+                                <option value="csv" selected="selected">CSV</option>
+                                <option value="netcdf4">netcdf4</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+            </fieldset>
+
+            <fieldset id="license">
+                <legend>Consent and Data License</legend>
+                <p>
+                    <input type="checkbox" id="citation_optin" name="citation_optin"/>
+                    <label for="citation_optin" id="citation_optin_label">
+                        I agree to ...
+                    </label>
+                </p>
+            </fieldset>
+            <fieldset id="submit">
+                <legend>Submit Job</legend>
+                <p>
+                    <button id="submit_btn" style="font-size:24px; background-color:lightblue;">Submit</button>
+                </p>
+            </fieldset>
+
+        </div>
+        <div>
+            <p>
+                For any questions, suggestions or issues with using this service, please contact <a href="mailto:n.f.mccarroll@reading.ac.uk">n.f.mccarroll@reading.ac.uk</a>.
+            </p>
+        </div>
+        <div class="footer">
+            <fieldset>
+                <legend>Supported By</legend>
+                <a target="_blank" href="https://www.nceo.ac.uk/"><img src="/images/nceo_img_logo_purple.svg" alt="NCEO Logo"
+                                                                      class="footer_image"/></a>
+                <a target="_blank"
+                   href="https://stfc.ukri.org/"><img
+                    src="/images/STFCMediumColourTrans.png" alt="STFC Logo" class="footer_image"/></a>
+            </fieldset>
+        </div>
+    </div>
+</div>
+</body>
+</html>
