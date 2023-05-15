@@ -1,4 +1,4 @@
-// the page will define a job_type variable set to either "timeseries" or "regrid"
+
 
 // jquery-like shorthand for quick lookup of an element by id
 $ = (id) => { return document.getElementById(id); }
@@ -24,26 +24,17 @@ function removeValue(arr,v) {
 //     * retrieve list of jobs for a user
 
 class Form {
-    constructor(job_type) {
+    constructor() {
 
-        this.job_type=job_type; // regrid, timeseries or region
         this.job_label = "";
-        if (this.job_type == "timeseries") {
-            this.bb_max_size = 5;
-            this.job_label = "time series";
-        } else if (this.job_type == "region") {
-            this.bb_max_size = 20;
-            this.job_label = "region";
-        } else {
-            this.bb_max_size = 0;
-            this.job_label = "regrid";
-        }
 
         // first bind elements in the page to member variables
 
         this.form = $("form");
         var that = this;
-        this.email_address = $("email_address");
+        this.submitter_id = $("submitter_id");
+        this.bundle = $("bundle");
+        this.variables = $("variables");
         this.time_step = $("time_step");
         this.daily_time_step = $("n_daily_step");
         this.n_daily_step_group = $("n_daily_step_group");
@@ -65,25 +56,30 @@ class Form {
 
         this.dialog_content_close.onclick = dialog_closefn;
 
-        // specific to regrid
+        this.request_type = $("request_type");
+        this.request_type.addEventListener("change", (evt) => {
+            this.requestTypeUpdated();
+        });
+
         this.longitude_step_group = $("longitude_step_group");
         this.latitude_step_group = $("latitude_step_group");
+
         this.longitude_step = $("longitude_step");
         this.latitude_step = $("latitude_step");
 
+
+        this.output_format = $("output_format");
+
+        this.requestTypeUpdated();
+
         // specific to time series or region
-        this.bounding_box_longitude_group_row1 = $("bounding_box_longitude_group_row1");
-        this.bounding_box_longitude_group_row2 = $("bounding_box_longitude_group_row2");
-        this.bounding_box_latitude_group_row1 = $("bounding_box_latitude_group_row1");
-        this.bounding_box_latitude_group_row2 = $("bounding_box_latitude_group_row2");
         this.bounding_box_longitude_centre = $("bounding_box_longitude_centre");
         this.bounding_box_longitude_width = $("bounding_box_longitude_width");
         this.bounding_box_latitude_centre = $("bounding_box_latitude_centre");
         this.bounding_box_latitude_height = $("bounding_box_latitude_height");
-        this.timeseries_output_format = $("timeseries_output_format");
-        this.timeseries_output_format_group = $("timeseries_output_format_group");
+
+
         this.bounding_box_map = $("bounding_box_map");
-        this.bounding_box_map_group = $("bounding_box_map_group");
         this.requested_lat = 0.0;
         this.requested_lon = 0.0;
 
@@ -94,35 +90,19 @@ class Form {
         this.first_month = start_month;
         this.last_month = end_month;
         this.last_year = end_year;
-        this.last_day = this.getDaysInMonth(""+end_year, ""+end_month);
 
-        this.start_month_controls = $("start_month_controls");
-        this.start_day_controls = $("start_day_controls");
-        this.start_date_year = $("start_date_year");
-        this.start_date_month = $("start_date_month");
-        this.start_date_day = $("start_date_day");
 
-        this.end_month_controls = $("end_month_controls");
-        this.end_day_controls = $("end_day_controls");
-        this.end_date_year = $("end_date_year");
-        this.end_date_month = $("end_date_month");
-        this.end_date_day = $("end_date_day");
+        this.start_date_year = ""
+        this.dt_picker = new dt_picker("start_date_year", "start_date_month", "start_month_controls", "start_date_day", "start_day_controls",
+                "end_date_year", "end_date_month", "end_month_controls", "end_date_day", "end_day_controls");
+        this.last_day = this.dt_picker.getDaysInMonth(""+end_year, ""+end_month);
+        this.dt_picker.configureYearMonthPickers(2000,1, 1, 2020, 12, 31, "daily");
+        this.dt_picker.defineCallback((start,end) => {
+            console.log(start + " => " + end);
+        });
 
-        this.exclude_sea_ice = $("exclude_sea_ice");
-        this.sea_ice_threshold = $("sea_ice_threshold");
-        this.sea_ice_threshold_group = $("sea_ice_threshold_group");
-        this.generate_sea_ice_fraction = $("generate_sea_ice_fraction");
-        this.include_bias_adjustments = $("include_bias_adjustments");
-        this.anomaly_or_absolute = $("anomaly_or_absolute");
-        this.spatial_lambda = $("spatial_lambda");
-        this.spatial_lambda_group = $("spatial_lambda_group");
-        this.tau = $("tau");
 
-        this.consent_optin = $("consent_optin");
-        this.citation_optin = $("citation_optin");
-        this.citation1 = $("citation1");
-        this.citation2 = $("citation2");
-        this.subscription_optin = $("subscription_optin");
+        this.consent = $("consent");
         this.submit_btn = $("submit_btn");
 
         // job view controls
@@ -136,6 +116,7 @@ class Form {
         this.runningjobs = $("running_jobs");
         this.refresh_btn = $("refresh_btn");
 
+
         // keep a housekeeping list of all controls which have been reported as invalid
         this.alerted_controls = [];
 
@@ -144,17 +125,7 @@ class Form {
         this.addHelp("n_daily_step_label","When N-day averaging is requested, specify the number of days N.");
         this.addHelp("start_date_label","Set a start date for the regridded data set.");
         this.addHelp("end_date_label","Set an end date for the regridded data set.");
-        this.addHelp("exclude_sea_ice_label","Ignore SST data from areas where the fraction of sea-ice present exceeds a threshold concentration? Sea-ice covered areas lack as many (or any) real SST observations, and accordingly the SST analysis is nudged towards a standard temperature for the freezing point of seawater where sea ice concentrations are high.");
-        this.addHelp("sea_ice_threshold_label","The fraction of sea ice above which a cell is ignored in calculating the regridded SST. When calculating anomalies, the climatology is always calculated from all cells regardless of sea ice fraction.");
-        this.addHelp("anomaly_or_absolute_label","Output SST anomaly values instead of absolute SSTs. The climatology is based on the analysis for the period 1982 to 2010 inclusive.");
-        this.addHelp("generate_sea_ice_fraction_label","Output the sea ice fraction as a variable.");
-        this.addHelp("include_bias_adjustments_label","The v2.1 record is known to have biases associated with desert dust aerosol and erratic calibration of early-record sensors [Merchant et al, 2019]. Adjustments to reduce these biases and include additional uncertainty in these effects have been developed, as described in [Merchant and Embury, 2020]. These adjustments operate on monthly and >5 degree time-space scales. Tick this box if you want these adjustments to be applied in your re-gridded dataset.");
-
-        this.addHelp("tau_label","The time-scale in days over which errors in the SST analysis are assumed to be highly correlated. This is used as a parameter for the approximate propagation of uncertainty to the target space-time resolution.");
-        this.addHelp("spatial_lambda_label","The length-scale in degrees of latitude and longitude over which errors in the SST analysis are assumed to be highly correlated. This is used as a parameter for the approximate propagation of uncertainty to the target space-time resolution.");
-        this.addHelp("consent_optin_label","You must consent to your e-mail address being temporarily stored in order to use this service.");
-        this.addHelp("citation_optin_label","You must consent to citing the paper(s) when using the data generated by this service.");
-        this.addHelp("subscription_optin_label","By checking this box you consent to your email-address being stored and to receiving notifications when new data or features are added to the service.");
+        this.addHelp("consent","You must consent to...");
 
         // regrid specific
         this.addHelp("latitude_step_label","The target latitude resolution. This must be a multiple of 0.05 degrees and a factor of 180 degrees. It must also not be greater than 5 degrees.");
@@ -167,32 +138,17 @@ class Form {
         this.addHelp("bounding_box_latitude_height_label","Set the height in degrees of latitude of the bounding box over which the "+this.job_label+" will be computed.  Must be a multiple of 0.05 degrees and no more than "+this.bb_max_size+" degrees.");
 
         // time series specific
-        this.addHelp("timeseries_output_format_label","Choose whether to generate the output time series as a netcdf4 or csv format file.");
+        this.addHelp("output_format_label","Choose the output format.");
 
         // set up event handlers on most of the controls
         // the handlers will typically enable, reconfigure or disable other controls, or clear validity reports
 
-        this.consent_optin.addEventListener("change", function() {
-            if (that.consent_optin.checked) {
+        this.consent.addEventListener("change", function() {
+           if (that.consent_optin.checked) {
                 that.consent_optin.setCustomValidity("");
             }
         });
 
-        this.citation_optin.addEventListener("change", function() {
-            if (that.citation_optin.checked) {
-                that.citation_optin.setCustomValidity("");
-            }
-        });
-
-        this.include_bias_adjustments.addEventListener("change", function() {
-            if (that.include_bias_adjustments.checked) {
-                that.citation1.setAttribute("style","display:none;");
-                that.citation2.setAttribute("style","display:inline;");
-            } else {
-                that.citation1.setAttribute("style","display:inline;");
-                that.citation2.setAttribute("style","display:none;");
-            }
-        });
 
         this.time_step.addEventListener("change", function() {
             if (that.time_step.value != "N-daily") {
@@ -200,51 +156,12 @@ class Form {
                 // on the N daily period that will be become non-focusable
                 that.removeAlert(that.daily_time_step);
             }
-            // if (that.time_step.value == "N-daily" || that.time_step.value == "annual") {
-            //    var start_year = Number.parseInt(that.start_date_year.value);
-            //    if (start_year == that.first_year && that.first_month > 1) {
-                    // N-daily and annual timesteps require whole years to operate
-                    // bump the start year up to the first complete year
-            //        that.start_date_year.value = ""+(start_year+1);
-            //    }
-            // }
-            that.configureYearMonthPickers();
-            that.updateControlVisibility();
+            that.dt_picker.changeTimeStep(that.time_step.value);
         });
 
-        this.exclude_sea_ice.addEventListener("change", function() {
-            if (!that.exclude_sea_ice.checked) {
-                // to prevent warnings in the browser console, remove validity warnings
-                // on the sea ice threshold that will be become non-focusable
-                that.removeAlert(that.sea_ice_threshold);
-            }
-            that.updateControlVisibility();
-        });
 
-        this.email_address.addEventListener("change", function() {
+        this.submitter_id.addEventListener("change", function() {
             that.configureViewButton();
-        });
-
-        this.start_date_year.addEventListener("change",function() {
-            that.configureDatePickers();
-            that.configureYearMonthPickers();
-        });
-
-        this.end_date_year.addEventListener("change",function() {
-            that.configureDatePickers();
-            that.configureYearMonthPickers();
-        });
-
-        this.start_date_month.addEventListener("change",function() {
-            that.configureDatePickers();
-        });
-
-        this.end_date_month.addEventListener("change",function() {
-            that.configureDatePickers();
-        });
-
-        this.time_step.addEventListener("change",function() {
-            that.configureDatePickers();
         });
 
         this.bounding_box_latitude_centre.addEventListener("change",function() {
@@ -271,40 +188,19 @@ class Form {
         var longitude_resolutions = ["0.1", "0.15", "0.2", "0.25", "0.3", "0.4", "0.45", "0.5", "0.6", "0.75", "0.8", "0.9", "1.0", "1.2", "1.25", "1.5", "1.6", "1.8", "2.0", "2.25", "2.4", "2.5", "3.0", "3.6", "3.75", "4.0", "4.5", "4.8", "5.0"];
 
         var time_resolutions = [];
-        if (this.job_type == "regrid" || this.job_type == "region") {
-           time_resolutions.push(["annual","Annual"]);
-        }
-
+        time_resolutions.push(["annual","Annual"]);
+        time_resolutions.push(["N-daily","N-day periods within year"]);
         time_resolutions.push(["monthly","Monthly"]);
         time_resolutions.push(["10-day","10 day periods within month"]);
         time_resolutions.push(["5-day","5 day periods within month"]);
-        time_resolutions.push(["N-daily","N-day periods within year"]);
-
-        if (this.job_type == "timeseries" || this.job_type == "region") {
-            time_resolutions.push(["daily","Daily"]);
-        }
+        time_resolutions.push(["daily","Daily"]);
 
         this.configureSelect("time_step", time_resolutions, true);
 
-        if (this.job_type == "regrid") {
-            this.configureSelect("latitude_step",latitude_resolutions, false,false);
-            this.configureSelect("longitude_step",longitude_resolutions, false,false);
-            this.hideElement(this.bounding_box_latitude_group_row1);
-            this.hideElement(this.bounding_box_latitude_group_row2);
-            this.hideElement(this.bounding_box_longitude_group_row1);
-            this.hideElement(this.bounding_box_longitude_group_row2);
-            this.hideElement(this.timeseries_output_format_group);
-            this.hideElement(this.bounding_box_map_group);
-        } else {
-            // region or timeseries
-            this.hideElement(this.latitude_step_group);
-            this.hideElement(this.longitude_step_group);
-            if (this.job_type == "region") {
-                this.hideElement(this.timeseries_output_format_group);
-                this.hideElement(this.spatial_lambda_group);
-            }
-            this.configureBoundingBoxMap();
-        }
+        this.configureSelect("latitude_step",latitude_resolutions, false,false);
+        this.configureSelect("longitude_step",longitude_resolutions, false,false);
+
+        this.configureBoundingBoxMap();
 
         this.time_step.value = "5-day";
         this.latitude_step.value = "0.5";
@@ -333,10 +229,6 @@ class Form {
         });
 
         this.configureViewButton();
-        this.configureYearMonthPickers(); // first call establishes valid values for the year/month pickers
-        this.setStartEndDefaults();           // this allows the defaults to be assigned
-        this.configureYearMonthPickers(); // call in case year/month pickers need to be adjusted after defaults set
-        this.configureDatePickers();
 
         if (self.bb_max_size>0) {
             $("bounding_box_longitude_width").setAttribute("max",""+self.bb_max_size);
@@ -348,6 +240,50 @@ class Form {
         },600000);   // auto refresh job list every 10 minutes
 
         this.updateControlVisibility();
+
+        this.loadBundles();
+    }
+
+    loadBundles() {
+        fetch("/metadata/bundles").then(r => r.json()).then(obj => this.setBundles(obj));
+    }
+
+    setBundles(bundle_list) {
+        bundle_list.forEach((bundle) => {
+            let elt = document.createElement("option");
+            elt.appendChild(document.createTextNode(bundle.name));
+            elt.setAttribute("value",bundle.id);
+            this.bundle.appendChild(elt);
+        });
+        if (bundle_list.length) {
+            this.loadVariables(bundle_list[0].id);
+        }
+    }
+
+    loadVariables(bundle_id) {
+        fetch("/metadata/bundles/"+bundle_id+"/variables").then(r => r.json()).then(obj => this.setVariables(obj));
+    }
+
+    setVariables(variable_list) {
+        variable_list.forEach((variable) => {
+            let elt = document.createElement("option");
+            elt.appendChild(document.createTextNode(variable.dataset_name+"/"+variable.variable_name));
+            elt.setAttribute("value",variable.id);
+            this.variables.appendChild(elt);
+        });
+    }
+
+    requestTypeUpdated() {
+        alert(this.request_type.value);
+        if (this.request_type.value == "timeseries") {
+            this.hideElement(this.longitude_step_group);
+            this.hideElement(this.latitude_step_group);
+            this.configureSelect("output_format",[["csv","CSV"],["netcdf","NetCDF4"]],true,true);
+        } else {
+            this.showElement(this.longitude_step_group);
+            this.showElement(this.latitude_step_group);
+            this.configureSelect("output_format",[["geotiff","GeoTIFF"],["netcdf","NetCDF4"]],true,true);
+        }
     }
 
     configureBoundingBoxMap() {
@@ -460,173 +396,20 @@ class Form {
     // form setup and configuration
     //
 
-    configureDatePickers() {
-        // for a given time resolution (yearly, monthly etc) show/hide/configure the
-        // relevant start/end year/month/day controls
-        switch(this.time_step.value) {
-            case "annual":
-                // regrid only
-                this.configureMonthControls(false);
-                this.configureDayControls(false,[],[]);
-                break;
-            case "N-daily":
-                this.configureMonthControls(false);
-                this.configureDayControls(false,[],[]);
-                break;
-            case "monthly":
-                this.configureMonthControls(true);
-                this.configureDayControls(false,[],[]);
-                break;
-            case "5-day":
-                this.configureMonthControls(true);
-                this.configureDayControls(true,[1,6,11,16,21,26],[5,10,15,20,25]);
-                break;
-            case "10-day":
-                this.configureMonthControls(true);
-                this.configureDayControls(true,[1,11,21],[10,20]);
-                break;
-            case "daily":
-                // time series only
-                this.configureMonthControls(true);
-                this.configureDayControls(true,[],[]);
-                break;
-            default:
-                break;
-        }
-    }
-
-    configureYearMonthPickers() {
-        var years = [];
-        // work out the range of years to allow for selection
-        var first_complete_year = this.first_year;
-        if (this.first_month>1) {
-            first_complete_year = this.first_year+1;
-        }
-        var first_valid_year = this.first_year;
-
-        var last_complete_year = this.last_year;
-        if (this.last_month<12) {
-            last_complete_year = this.last_year-1;
-        }
-        var last_valid_year = this.last_year;
-
-        // for annual or N-daily, allow complete years only
-        if (this.time_step.value == "N-daily" || this.time_step.value == "annual") {
-            // N-daily and annual timesteps require whole years to operate
-            // bump the start year up to the first complete year
-            first_valid_year = first_complete_year;
-            last_valid_year = last_complete_year;
-        }
-
-        for (var year = first_valid_year; year <= last_valid_year; year++) {
-            years.push(""+year);
-        }
-
-        // clip the currently selected year to the valid year range, if necessary
-        if (Number.parseInt(this.start_date_year) < first_valid_year) {
-            this.start_date_year.value = ""+first_valid_year;
-        }
-        if (Number.parseInt(this.start_date_year) > last_valid_year) {
-            this.start_date_year.value = ""+last_valid_year;
-        }
-        if (Number.parseInt(this.end_date_year) < first_valid_year) {
-            this.end_date_year.value = ""+first_valid_year;
-        }
-        if (Number.parseInt(this.end_date_year) > last_valid_year) {
-            this.end_date_year.value = ""+last_valid_year;
-        }
-
-        this.configureSelect("start_date_year",years,false,true);
-
-
-        this.configureSelect("end_date_year",years,false,false);
-        var allmonths = [
-            ["1", "January"],
-            ["2", "February"],
-            ["3", "March"],
-            ["4", "April"],
-            ["5", "May"],
-            ["6", "June"],
-            ["7", "July"],
-            ["8", "August"],
-            ["9", "September"],
-            ["10", "October"],
-            ["11", "November"],
-            ["12", "December"]
-        ];
-        // configure the range of months to show in the start/end pickers
-        // normally this is all months
-        // ...however if the first year is selected (which is currently partially covered, for 1981)
-        // don't include the first months of the year
-        var slice_start = 0;
-        var slice_end = 12;
-        if (Number.parseInt(this.start_date_year.value) == this.first_year) {
-            slice_start = this.first_month-1;
-        }
-        if (Number.parseInt(this.start_date_year.value) == this.last_year) {
-            slice_end = this.last_month;
-        }
-        var startmonths = allmonths.slice(slice_start, slice_end);
-        this.configureSelect("start_date_month",startmonths,true,true);
-
-        slice_start = 0;
-        slice_end = 12;
-        if (Number.parseInt(this.end_date_year.value) == this.first_year) {
-            slice_start = this.first_month-1;
-        }
-        if (Number.parseInt(this.end_date_year.value) == this.last_year) {
-            slice_end = this.last_month;
-        }
-        var endmonths = allmonths.slice(slice_start, slice_end);
-        this.configureSelect("end_date_month",endmonths,true,false);
-    }
-
     setStartEndDefaults() {
-        this.start_date_year.value = ""+default_start_year;
-        this.start_date_month.value = ""+default_start_month;
-        this.start_date_day.value = "1";
-
-        this.end_date_year.value = ""+default_end_year;
-        this.end_date_month.value = ""+default_end_month;
-        this.end_date_day.value = ""+this.getDaysInMonth(this.end_date_year.value,this.end_date_month.value);;
-    }
-
-    configureMonthControls(visible) {
-        var visibility = (visible ? "visible" : "hidden");
-        this.start_month_controls.setAttribute("style","visibility:"+visibility+";");
-        this.end_month_controls.setAttribute("style","visibility:"+visibility+";");
-    }
-
-    configureDayControls(visible,valid_start_days,valid_end_days) {
-        var visibility = (visible ? "visible" : "hidden");
-        this.start_day_controls.setAttribute("style","visibility:"+visibility+";");
-        this.end_day_controls.setAttribute("style","visibility:"+visibility+";");
-
-        if (valid_end_days.length > 0) {
-            var end_month_last_day = this.getDaysInMonth(this.end_date_year.value,this.end_date_month.value);
-            valid_end_days.push(end_month_last_day);
-        }
-
-        if (visible && valid_start_days.length==0 && valid_end_days.length==0) {
-            // if the control is visible but the start and end day lists are empty, populate them with all days
-            var last_day_in_start_month = this.getDaysInMonth(this.start_date_year.value,this.start_date_month.value);
-            for(var day=1; day<=last_day_in_start_month;day+=1) {
-                valid_start_days.push(day);
-            }
-            var last_day_in_end_month = this.getDaysInMonth(this.end_date_year.value,this.end_date_month.value);
-            for(var day=1; day<=last_day_in_end_month;day+=1) {
-                valid_end_days.push(day);
-            }
-        }
-
-        this.configureSelect("start_date_day",valid_start_days,false,true);
-        this.configureSelect("end_date_day",valid_end_days,false,false);
+        this.dt_picker.configureYearMonthPickers(
+            default_start_year,
+            default_start_month,
+            1,
+            default_end_year,
+            default_end_month,
+            this.getDaysInMonth(default_end_year,default_end_month),
+            "5-day");
     }
 
     updateControlVisibility() {
         // show or hide certain controls based on the current form settings
         this.makeVisible(this.n_daily_step_group,this.time_step.value == "N-daily");
-        this.makeVisible(this.sea_ice_threshold_group,this.exclude_sea_ice.checked);
     }
 
     makeVisible(control,visible) {
@@ -641,12 +424,16 @@ class Form {
         control.setAttribute("style","display:none;");
     }
 
+    showElement(control) {
+        control.setAttribute("style","display:block;");
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // Job list related
     //
 
     configureViewButton() {
-        if (this.email_address.value != "") {
+        if (this.submitter_id.value != "") {
             this.view_btn.disabled = false;
         } else {
             this.view_btn.disabled = true;
@@ -672,7 +459,7 @@ class Form {
                 },
                 redirect: 'follow',
                 referrerPolicy: 'no-referrer',
-                body: JSON.stringify({"email_address":this.email_address.value})
+                body: JSON.stringify({"submitter_id":this.submitter_id.value})
             }).then((response) => {
                 return response.json();
             }).then((data) => {
@@ -936,22 +723,6 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
         }
     }
 
-    getDaysInMonth(year_s,month_s) {
-        // given a year and month (in the range 1-12), return the last day in the month in range 28-31
-        // input year and month are strings
-        var year = Number.parseInt(year_s);        // convert to int
-        var month = Number.parseInt(month_s)-1;    // convert to int range 0 - 11
-
-        var next_month = month+1;
-        if (next_month == 12) {
-            next_month = 0;
-            year += 1;
-        }
-        // passing 0 as the day-in-month should return the last day in the previous month
-        var last_day_dt = new Date(year,next_month,0);
-        return last_day_dt.getDate();
-    }
-
     removeAlert(control) {
         // clear a validity alert on a control and remove it from the list of controls
         // used when a control is about to go out of focus
@@ -966,7 +737,7 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
     // form submission - code dealing with validating and submitting the form
     //
 
-    isFormValid(start_date_str,end_date_str) {
+    isFormValid() {
         // validate the form
         // start_date_str and end_date_str are the start and end dates collected as strings with format YYYY-MM-DD
 
@@ -978,20 +749,15 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
         this.alerted_controls = [];
 
         // basic checks (consent/citation optins and e-mail address)
-        if (!this.email_address.validity.valid) {
-            this.email_address.setCustomValidity("Please use a valid e-mail address");
-            this.email_address.reportValidity();
-            this.alerted_controls.push(this.email_address);
+        if (!this.submitter_id.validity.valid) {
+            this.submitter_id.setCustomValidity("Please use a valid submitter id");
+            this.submitter_id.reportValidity();
+            this.alerted_controls.push(this.submitter_id);
         }
-        if (!this.consent_optin.checked) {
-            this.consent_optin.setCustomValidity("You must consent to having your e-mail address stored");
-            this.consent_optin.reportValidity();
-            this.alerted_controls.push(this.consent_optin);
-        }
-        if (!this.citation_optin.checked) {
-            this.citation_optin.setCustomValidity("You must consent to using the data under the CC BY 4.0 license");
-            this.citation_optin.reportValidity();
-            this.alerted_controls.push(this.citation_optin);
+        if (!this.consent.checked) {
+            this.consent.setCustomValidity("You must consent to having your e-mail address stored");
+            this.consent.reportValidity();
+            this.alerted_controls.push(this.consent);
         }
 
         // check the N daily step only if N-daily time resolution is selected
@@ -1004,101 +770,32 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
             }
         }
 
-        // check the sea ice threshold only if exclude sea ice is selected
-        if (this.exclude_sea_ice.checked) {
-            var sitv = Number(this.sea_ice_threshold.value);
-            if (Number.isNaN(sitv) || !Number.isInteger(sitv) || sitv < 0 || sitv > 100) {
-                this.sea_ice_threshold.setCustomValidity("The sea ice threshold % value must be an integer in the range 0 to 100");
-                this.sea_ice_threshold.reportValidity();
-                this.alerted_controls.push(this.sea_ice_threshold);
-            }
+        // check latitude min and height
+        var bb_lat_min = Number.parseFloat(this.bounding_box_latitude_centre.value);
+        if (Number.isNaN(bb_lat_min) || bb_lat_min < -90.0 || bb_lat_min > 90.0) {
+            this.bounding_box_latitude_centre.setCustomValidity("The latitude value must lie in the range from -90 to 90 degrees");
+            this.bounding_box_latitude_centre.reportValidity();
+            this.alerted_controls.push(this.bounding_box_latitude_centre);
+        }
+        var bb_lat_height = Number.parseFloat(this.bounding_box_latitude_height.value);
+        if (Number.isNaN(bb_lat_height) || bb_lat_height < 0.05 || bb_lat_height > this.bb_max_size) {
+            this.bounding_box_latitude_height.setCustomValidity("The latitude box height must lie in the range from 0.05 to "+this.bb_max_size+" degrees");
+            this.bounding_box_latitude_height.reportValidity();
+            this.alerted_controls.push(this.bounding_box_latitude_height);
         }
 
-        // check tau is an integer > 0
-        var tau = Number(this.tau.value);
-        if (Number.isNaN(tau) || !Number.isInteger(tau) || tau <= 0) {
-            this.tau.setCustomValidity("The tau value must be an integer > 0");
-            this.tau.reportValidity();
-            this.alerted_controls.push(this.tau);
+        // check longitude min and width
+        var bb_lon_min = Number.parseFloat(this.bounding_box_longitude_centre.value);
+        if (Number.isNaN(bb_lon_min) || bb_lon_min < -180.0 || bb_lon_min > 180.0) {
+            this.bounding_box_longitude_centre.setCustomValidity("The longitude value must lie in the range from -180 to 180 degrees");
+            this.bounding_box_longitude_centre.reportValidity();
+            this.alerted_controls.push(this.bounding_box_longitude_centre);
         }
-
-        // check lambda is a valid number and > 0
-        var spatial_lambda = Number.parseFloat(this.spatial_lambda.value);
-        if (Number.isNaN(spatial_lambda) || spatial_lambda < 0.0) {
-            this.spatial_lambda.setCustomValidity("The spatial lambda value must be a number > 0");
-            this.spatial_lambda.reportValidity();
-            this.alerted_controls.push(this.spatial_lambda);
-        }
-
-        if (this.job_type == "timeseries" || this.job_type == "region") {
-            // check time series specific controls
-
-            // check latitude min and height
-            var bb_lat_min = Number.parseFloat(this.bounding_box_latitude_centre.value);
-            if (Number.isNaN(bb_lat_min) || bb_lat_min < -90.0 || bb_lat_min > 90.0) {
-                this.bounding_box_latitude_centre.setCustomValidity("The latitude value must lie in the range from -90 to 90 degrees");
-                this.bounding_box_latitude_centre.reportValidity();
-                this.alerted_controls.push(this.bounding_box_latitude_centre);
-            }
-            var bb_lat_height = Number.parseFloat(this.bounding_box_latitude_height.value);
-            if (Number.isNaN(bb_lat_height) || bb_lat_height < 0.05 || bb_lat_height > this.bb_max_size) {
-                this.bounding_box_latitude_height.setCustomValidity("The latitude box height must lie in the range from 0.05 to "+this.bb_max_size+" degrees");
-                this.bounding_box_latitude_height.reportValidity();
-                this.alerted_controls.push(this.bounding_box_latitude_height);
-            }
-
-            // check longitude min and width
-            var bb_lon_min = Number.parseFloat(this.bounding_box_longitude_centre.value);
-            if (Number.isNaN(bb_lon_min) || bb_lon_min < -180.0 || bb_lon_min > 180.0) {
-                this.bounding_box_longitude_centre.setCustomValidity("The longitude value must lie in the range from -180 to 180 degrees");
-                this.bounding_box_longitude_centre.reportValidity();
-                this.alerted_controls.push(this.bounding_box_longitude_centre);
-            }
-            var bb_lon_width = Number.parseFloat(this.bounding_box_longitude_width.value);
-            if (Number.isNaN(bb_lon_width) || bb_lon_width < 0.05 || bb_lon_width > this.bb_max_size) {
-                this.bounding_box_longitude_width.setCustomValidity("The longitude box width must lie in the range from 0.05 to "+this.bb_max_size+" degrees");
-                this.bounding_box_longitude_width.reportValidity();
-                this.alerted_controls.push(this.bounding_box_longitude_width);
-            }
-        }
-
-        // checks on the start and end date
-        if (start_date_str >= end_date_str) {
-           // if the start date is greater than the end date, its a bit tricky to figure out which of the
-           // year / month / day pickers to report an error on...
-           var sy = Number.parseInt(this.start_date_year.value);
-           var sm = Number.parseInt(this.start_date_month.value);
-           var sd = Number.parseInt(this.start_date_day.value);
-           var ey = Number.parseInt(this.end_date_year.value);
-           var em = Number.parseInt(this.end_date_month.value);
-           var ed = Number.parseInt(this.end_date_day.value);
-
-           var alert_control;
-           switch(this.time_step.value) {
-                case "annual":
-                case "N-daily":
-                    alert_control = this.end_date_year;
-                    break;
-                case "monthly":
-                    if (sy > ey) {
-                        alert_control = this.end_date_year;
-                    } else {
-                        alert_control = this.end_date_month;
-                    }
-                    break;
-                default:
-                    if (sy > ey) {
-                        alert_control = this.end_date_year;
-                    } else if (sm > em) {
-                        alert_control = this.end_date_month;
-                    } else {
-                        alert_control = this.end_date_day;
-                    }
-                    break;
-           }
-           alert_control.setCustomValidity("Start date must be before end date");
-           alert_control.reportValidity();
-           this.alerted_controls.push(alert_control);
+        var bb_lon_width = Number.parseFloat(this.bounding_box_longitude_width.value);
+        if (Number.isNaN(bb_lon_width) || bb_lon_width < 0.05 || bb_lon_width > this.bb_max_size) {
+            this.bounding_box_longitude_width.setCustomValidity("The longitude box width must lie in the range from 0.05 to "+this.bb_max_size+" degrees");
+            this.bounding_box_longitude_width.reportValidity();
+            this.alerted_controls.push(this.bounding_box_longitude_width);
         }
 
         return (this.alerted_controls.length == 0);
@@ -1114,23 +811,13 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
         var start_date_value = "";
         var end_date_value = "";
 
-        switch(this.time_step.value) {
-            case "annual":
-            case "N-daily":
-                start_date_value = this.start_date_year.value+"-01-01";
-                end_date_value = this.end_date_year.value+"-12-31";
-                break;
-            case "monthly":
-                start_date_value = this.start_date_year.value+"-"+this.makeTwoDigits(this.start_date_month.value)+"-01";
-                end_date_value = this.end_date_year.value+"-"+this.makeTwoDigits(this.end_date_month.value)+"-"+this.makeTwoDigits(this.getDaysInMonth(this.end_date_year.value,this.end_date_month.value));
-                break;
-            default:
-                start_date_value = this.start_date_year.value+"-"+this.makeTwoDigits(this.start_date_month.value)+"-"+this.makeTwoDigits(this.start_date_day.value);
-                end_date_value = this.end_date_year.value+"-"+this.makeTwoDigits(this.end_date_month.value)+"-"+this.makeTwoDigits(this.end_date_day.value);
-                break;
-        }
+        let start_date = this.dt_picker.get_start_date();
+        let end_date = this.dt_picker.get_end_date();
 
-        if (this.isFormValid(start_date_value,end_date_value)) {
+        start_date_value = start_date.getFullYear()+"-"+this.makeTwoDigits(1+start_date.getMonth())+"-"+this.makeTwoDigits(start_date.getDate());
+        end_date_value = end_date.getFullYear()+"-"+this.makeTwoDigits(1+end_date.getMonth())+"-"+this.makeTwoDigits(end_date.getDate());
+
+        if (this.isFormValid()) {
 
             // OK, form appears to be valid
 
@@ -1138,40 +825,26 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
             var spec = {
                 "time_step":this.time_step.value,
                 "n_daily_step":this.daily_time_step.value,
-                "email_address":this.email_address.value,
+                "submitter_id":this.submitter_id.value,
                 "start_date":start_date_value,
                 "end_date":end_date_value,
-                "exclude_sea_ice":this.exclude_sea_ice.checked,
-                "sea_ice_threshold":this.sea_ice_threshold.value,
-                "anomaly_or_absolute":this.anomaly_or_absolute.value,
-                "spatial_lambda":this.spatial_lambda.value,
-                "tau":this.tau.value,
-                "generate_sea_ice_fraction":this.generate_sea_ice_fraction.checked,
-                "subscription_optin":this.subscription_optin.checked,
-                "job_type":this.job_type,
+                "consent":this.consent.checked,
                 "include_bias_adjustments":this.include_bias_adjustments.checked
             }
 
-            if (this.job_type == "timeseries" || this.job_type == "region") {
-                // daily is equivalent to N-daily,N=1
-                if (this.time_step.value == "daily") {
-                    spec["time_step"] = "N-daily";
-                    spec["n_daily_step"] = "1";
-                }
-                var min_lon = this.computeMinLongitude(this.bounding_box_longitude_centre.value,this.bounding_box_longitude_width.value);
-                var min_lat = this.computeMinLatitude(this.bounding_box_latitude_centre.value,this.bounding_box_latitude_height.value);
 
-                spec["bounding_box_longitude_min"] = min_lon;
-                spec["bounding_box_longitude_width"] = this.bounding_box_longitude_width.value;
-                spec["bounding_box_latitude_min"] = min_lat;
-                spec["bounding_box_latitude_height"] = this.bounding_box_latitude_height.value;
-                if (this.job_type == "timeseries") {
-                    spec["timeseries_output_format"] = this.timeseries_output_format.value;
-                }
-            } else {
-                spec["longitude_step"] = this.longitude_step.value;
-                spec["latitude_step"] = this.latitude_step.value;
-            }
+            var min_lon = this.computeMinLongitude(this.bounding_box_longitude_centre.value,this.bounding_box_longitude_width.value);
+            var min_lat = this.computeMinLatitude(this.bounding_box_latitude_centre.value,this.bounding_box_latitude_height.value);
+
+            spec["bounding_box_longitude_min"] = min_lon;
+            spec["bounding_box_longitude_width"] = this.bounding_box_longitude_width.value;
+            spec["bounding_box_latitude_min"] = min_lat;
+            spec["bounding_box_latitude_height"] = this.bounding_box_latitude_height.value;
+            spec["output_format"] = this.output_format.value;
+
+            spec["longitude_step"] = this.longitude_step.value;
+            spec["latitude_step"] = this.latitude_step.value;
+
 
             // console.log("Posting job with spec: "+JSON.stringify(spec,null,2));
 
@@ -1202,5 +875,5 @@ var form = null;
 
 // set up a callback to create the above Form object once the page has loaded
 window.addEventListener("load",function() {
-    form = new Form(job_type);
+    form = new Form();
 });

@@ -1,19 +1,20 @@
 
-function test(start_year_id, start_month_id, start_month_controls_id, start_day_id, start_day_controls_id,
+function bind_dt_pickers(start_year_id, start_month_id, start_month_controls_id, start_day_id, start_day_controls_id,
                 end_year_id, end_month_id, end_month_controls_id, end_day_id, end_day_controls_id) {
     var picker = new dt_picker(start_year_id, start_month_id, start_month_controls_id, start_day_id, start_day_controls_id,
                 end_year_id, end_month_id, end_month_controls_id, end_day_id, end_day_controls_id);
-    picker.configureYearMonthPickers(2000,1, 2020, 12, "5-day");
+    picker.configureYearMonthPickers(2000,1, 1, 2020, 12, 31, "daily");
     picker.defineCallback((start,end) => {
         console.log(start + " => " + end);
     });
 
-    var change_time_step = document.getElementById("change_time_step");
-    change_time_step.addEventListener("change",function(evt) {
-       let value = change_time_step.value;
-       picker.changeTimeStep(value);
-    });
-    picker.changeTimeStep(change_time_step.value);
+    // var change_time_step = document.getElementById("change_time_step");
+    // change_time_step.addEventListener("change",function(evt) {
+    //   let value = change_time_step.value;
+    //   picker.changeTimeStep(value);
+    // });
+    // picker.changeTimeStep(change_time_step.value);
+    return picker;
 }
 
 function $(id) {
@@ -77,14 +78,8 @@ class dt_picker {
     }
 
     callback() {
-        var start_date = new Date(
-            Number.parseInt(this.start_date_year.value),
-            Number.parseInt(this.start_date_month.value)-1,
-            Number.parseInt(this.start_date_day.value));
-        var end_date = new Date(
-            Number.parseInt(this.end_date_year.value),
-            Number.parseInt(this.end_date_month.value)-1,
-            Number.parseInt(this.end_date_day.value));
+        let start_date = this.get_start_date();
+        let end_date = this.get_end_date();
         if (this.checkValid(start_date,end_date)) {
             if (this.callback_fn) {
                 this.callback_fn(start_date, end_date);
@@ -92,12 +87,35 @@ class dt_picker {
         }
     }
 
-    configureYearMonthPickers(first_year, first_month, last_year, last_month, time_step) {
+    get_start_date() {
+        return new Date(
+            Number.parseInt(this.start_date_year.value),
+            Number.parseInt(this.start_date_month.value)-1,
+            Number.parseInt(this.start_date_day.value));
+    }
+
+    get_end_date() {
+        return new Date(
+            Number.parseInt(this.end_date_year.value),
+            Number.parseInt(this.end_date_month.value)-1,
+            Number.parseInt(this.end_date_day.value));
+    }
+
+    configureYearMonthPickers(first_year, first_month, first_day, last_year, last_month, last_day, time_step) {
         this.first_year = first_year;
         this.first_month = first_month;
+        this.first_day = first_day;
         this.last_year = last_year;
         this.last_month = last_month;
+        this.last_day = last_day;
         this.time_step = time_step;
+
+        this.start_date_day.value = this.first_day;
+        this.start_date_month.value = this.first_month;
+        this.start_date_year.value = this.first_year;
+        this.end_date_day.value = this.last_day;
+        this.end_date_month.value = this.last_month;
+        this.end_date_year.value = this.last_year;
 
         this.refresh();
     }
@@ -136,6 +154,10 @@ class dt_picker {
             case "monthly":
                 this.start_date_day.value = "1";
                 this.end_date_day.value =  ""+this.getDaysInMonth(this.end_date_year.value,this.end_date_month.value);
+                this.months_visible = true;
+                break;
+            case "daily":
+                this.days_visible = true;
                 this.months_visible = true;
                 break;
         }

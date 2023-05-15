@@ -4,6 +4,7 @@
     <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'/>
     <link href="/css/style.css" type="text/css" rel="stylesheet"/>
     <script type="text/javascript" src="/js/app.js"></script>
+    <script type="text/javascript" src="/js/dt_picker.js"></script>
     <title>{{title}}</title>
     <script type="text/javascript">
         // template parameters that are substituted into global variables when the page is served
@@ -102,9 +103,23 @@
                 </fieldset>
             </fieldset>
             <fieldset id="parameters">
-                <legend>Job Parameters</legend>
+                <legend>Data Request</legend>
 
                 <table>
+                    <tr>
+                        <td><label class="mainlabel" for="bundle" id="bundle_label">Bundle Name</label></td>
+                        <td colspan="3">
+                            <select name="bundle" id="bundle">
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label class="mainlabel" for="bundle" id="bundle_label">Variables</label></td>
+                        <td colspan="3">
+                            <select name="variables" id="variables" multiple size="5">
+                            </select>
+                        </td>
+                    </tr>
                     <tr>
                         <td><label class="mainlabel" for="time_step" id="time_step_label">Time Resolution</label></td>
                         <td>
@@ -116,6 +131,15 @@
                                 <label for="n_daily_step" id="n_daily_step_label">N-day period</label>
                                 <input type="number" name="n_daily_step" id="n_daily_step" min="1" max="365" value="5"/>
                             </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label class="mainlabel" for="request_type" id="request_type_label">Request Type</label></td>
+                        <td colspan="2">
+                            <select name="request_type" id="request_type">
+                                <option value="timeseries">Time Series</option>
+                                <option value="gridded">Gridded</option>
+                            </select>
                         </td>
                     </tr>
                     <tr id="longitude_step_group">
@@ -183,100 +207,40 @@
                         </td>
                     </tr>
 
-                    <tr id="bounding_box_longitude_group_row1">
+                    <tr>
                         <td><label class="mainlabel" for="bounding_box_longitude_centre" id="bounding_box_longitude_centre_label">Longitude
                             of bounding box (degrees east)</label></td>
                         <td><input type="number" value="0" min="-180" max="180" step="any"
                                    id="bounding_box_longitude_centre"/></td>
-                        <td id="bounding_box_map_group" rowspan="4">
+                        <td rowspan="4">
                             <div id="bounding_box_map" style="width:400px;height:250px;"></div>
                         </td>
                     </tr>
-                    <tr id="bounding_box_latitude_group_row1">
+                    <tr>
                         <td><label class="mainlabel" for="bounding_box_latitude_centre" id="bounding_box_latitude_centre_label">Latitude
                             of bounding box (degrees north)</label></td>
                         <td><input type="number" value="0" min="-180" max="180" step="any" id="bounding_box_latitude_centre"/>
                         </td>
                     </tr>
-                    <tr id="bounding_box_longitude_group_row2">
+                    <tr>
                         <td><label class="mainlabel" for="bounding_box_longitude_width"
                                    id="bounding_box_longitude_width_label">Width in degrees</label></td>
                         <td><input type="number" value="2" min="0.05" step="0.05" id="bounding_box_longitude_width"/>
                         </td>
                     </tr>
-                    <tr id="bounding_box_latitude_group_row2">
+                    <tr>
                         <td><label class="mainlabel" for="bounding_box_latitude_height"
                                    id="bounding_box_latitude_height_label">Height in degrees</label></td>
                         <td><input type="number" value="2" min="0.05" step="0.05" id="bounding_box_latitude_height"/>
                         </td>
                     </tr>
 
+
                     <tr>
-                        <td>
-                            <label for="exclude_sea_ice" id="exclude_sea_ice_label">Exclude data above sea ice
-                                threshold</label>
-                        </td>
-                        <td>
-                            <input type="checkbox" id="exclude_sea_ice" name="exclude_sea_ice" checked/>
-                        </td>
-                        <td colspan="1">
-                            <div id="sea_ice_threshold_group">
-                                <label for="sea_ice_threshold" id="sea_ice_threshold_label">Sea Ice Exclusion Threshold
-                                    %</label>
-                                <input type="number" value="100" id="sea_ice_threshold" name="sea_ice_threshold" max="100"
-                                       min="0" step="1"/>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <label for="include_bias_adjustments" id="include_bias_adjustments_label">Include post-hoc SST
-                                bias adjustments</label>
-                        </td>
-                        <td colspan="2">
-                            <input type="checkbox" id="include_bias_adjustments" name="bias_adjustments" checked/>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><label for="anomaly_or_absolute" id="anomaly_or_absolute_label">Generate Absolute SST or
-                            Anomaly</label></td>
-                        <td colspan="2">
-                            <select id="anomaly_or_absolute" name="anomaly_or_absolute">
-                                <option value="anomaly">Anomaly</option>
-                                <option value="absolute" selected="selected">Absolute</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <label for="generate_sea_ice_fraction" id="generate_sea_ice_fraction_label">Generate sea-ice
-                                fraction</label>
-                        </td>
-                        <td colspan="2">
-                            <input type="checkbox" id="generate_sea_ice_fraction" name="generate_sea_ice_fraction" checked/>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><label for="tau" id="tau_label">Error Correlation in Time (Days)</label></td>
-                        <td colspan="2"><input type="number" min="1" max="14" step="1" id="tau" name="tau" value="7"/></td>
-                    </tr>
-                    <tr id="spatial_lambda_group">
-                        <td>
-                            <label for="spatial_lambda" id="spatial_lambda_label">Error Correlation In Space
-                                (Degrees)</label>
-                        </td>
-                        <td colspan="2">
-                            <input type="number" id="spatial_lambda" name="spatial_lambda" min="0.05" value="3.0"
-                                   step="0.05"/>
-                        </td>
-                    </tr>
-                    <tr id="timeseries_output_format_group">
-                        <td><label for="timeseries_output_format" id="timeseries_output_format_label">Output file
+                        <td><label for="output_format" id="output_format_label">Output file
                             format</label></td>
                         <td colspan="2">
-                            <select id="timeseries_output_format" name="timeseries_output_format">
-                                <option value="csv" selected="selected">CSV</option>
-                                <option value="netcdf4">netcdf4</option>
+                            <select id="output_format" name="output_format">
                             </select>
                         </td>
                     </tr>
@@ -286,8 +250,8 @@
             <fieldset id="license">
                 <legend>Consent and Data License</legend>
                 <p>
-                    <input type="checkbox" id="citation_optin" name="citation_optin"/>
-                    <label for="citation_optin" id="citation_optin_label">
+                    <input type="checkbox" id="consent" name="consent"/>
+                    <label for="consent" id="consent">
                         I agree to ...
                     </label>
                 </p>

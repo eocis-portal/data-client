@@ -24,6 +24,8 @@ import logging
 from flask import Flask, render_template, request, send_from_directory, abort, jsonify
 
 from eocis_data_manager.store import Store
+from eocis_data_manager.schema_operations import SchemaOperations
+from eocis_data_manager.job_operations import JobOperations
 from eocis_data_manager.job import Job
 
 import os
@@ -41,6 +43,11 @@ output_folder = os.path.join(app.config["OUTPUT_PATH"],"data")
 
 # open the database containing the list of active jobs
 store = Store(app.config["DATABASE_PATH"])
+with SchemaOperations(store) as t:
+    # load the schema into the database
+    t.populate_schema("/home/dev/github/data-manager/test/schema")
+
+
 
 start_year = app.config["START_YEAR"]
 start_month = app.config["START_MONTH"]
@@ -79,7 +86,7 @@ class App:
     def submit():
         """Handle submitted form.  Perform server side validation and add a new job into the database."""
         try:
-            with store.openTransaction() as t:
+            with JobOperations(store) as t:
                 job = Job.create(request.json)
                 t.createJob(job)
                 job_id = job.getJobId()
@@ -99,7 +106,7 @@ class App:
             submitter_id = content['submitter_id']
             job_list = []
 
-            with store.openTransaction() as t:
+            with JobOperations(store) as t:
                 running_job_count = t.countJobsByState([Job.STATE_RUNNING])
                 jobs = t.listJobsBySubmitterId(submitter_id)
                 for job in jobs:
@@ -114,6 +121,28 @@ class App:
             App.logger.exception("view")
             return jsonify({"jobs": [], "running_jobs": "?"})
 
+    ####################################################################################################################
+    # Service static files
+    #
+
+    @staticmethod
+    @app.route('/metadata/bundles', methods=['GET'])
+    def get_bundles():
+        t = SchemaOperations(store)
+        bundles = []
+        for b in t.listBundles():
+            bundles.append({"id": b.bundle_id, "name": b.bundle_name})
+        return jsonify(bundles)
+
+    @staticmethod
+    @app.route('/metadata/bundles/<bundle>/variables', methods=['GET'])
+    def get_variables(bundle=None):
+        t = SchemaOperations(store)
+        variables = []
+        for ds in t.listDataSets():
+            for variable in ds.variables:
+                variables.append({"id":variable.variable_id,"variable_name":variable.variable_name,"dataset_name":ds.dataset_name})
+        return jsonify(variables)
 
     ####################################################################################################################
     # Service static files
@@ -124,13 +153,16 @@ class App:
     @app.route('/index.html', methods=['GET'])
     def fetch():
         """Serve the main page containing the regridding form"""
-        return render_template('app.html', title="Data", subtitle="Service",
-                               job_type="regrid", service_name="re-gridding",
+        return render_template('app.html', title="EOCIS Data", subtitle="Service",
+                               service_name="EOCIS data service",
                                start_year=start_year, start_month=start_month, end_year=end_year, end_month=end_month,
                                default_start_year=default_start_year, default_start_month=default_start_month,
                                default_end_year=default_end_year, default_end_month=default_end_month,
                                output_formats="The dataset will be prepared in netcdf4 format at the temporal and spatial resolution specified in the request form below.",
                                summary="Obtain L4 sea and ocean surface temperature datasets in your chosen spatial and temporal resolution.")
+
+
+
 
     @staticmethod
     @app.route('/css/<path:path>',methods = ['GET'])
