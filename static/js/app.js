@@ -36,6 +36,7 @@ class Form {
         this.bundle = $("bundle");
         this.variables = $("variables");
         this.time_step = $("time_step");
+        this.spatial_resolution = $("spatial_resolution");
         this.daily_time_step = $("n_daily_step");
         this.n_daily_step_group = $("n_daily_step_group");
 
@@ -61,23 +62,19 @@ class Form {
             this.requestTypeUpdated();
         });
 
-        this.longitude_step_group = $("longitude_step_group");
-        this.latitude_step_group = $("latitude_step_group");
+        this.spatial_resolution_group = $("spatial_resolution_group");
 
-        this.longitude_step = $("longitude_step");
-        this.latitude_step = $("latitude_step");
-
+        this.spatial_resolution = $("spatial_resolution");
 
         this.output_format = $("output_format");
 
         this.requestTypeUpdated();
 
-        // specific to time series or region
-        this.bounding_box_longitude_centre = $("bounding_box_longitude_centre");
-        this.bounding_box_longitude_width = $("bounding_box_longitude_width");
-        this.bounding_box_latitude_centre = $("bounding_box_latitude_centre");
-        this.bounding_box_latitude_height = $("bounding_box_latitude_height");
-
+        // bounding box
+        this.longitude_min = $("longitude_min");
+        this.longitude_max = $("longitude_max");
+        this.latitude_min = $("latitude_min");
+        this.latitude_max = $("latitude_max");
 
         this.bounding_box_map = $("bounding_box_map");
         this.requested_lat = 0.0;
@@ -122,20 +119,20 @@ class Form {
 
         // configure help on each control - set the tooltip text
         this.addHelp("time_step_label","The target time resolution can be annual, monthly, dekadal (3 per month), or pentadal (6 per month). The final dekad or pentad per month then addresses a variable number of days. Alternatively, strict N-day averaging period can be requested, aligned with years, such that only the last period per year may address a number of days not equal to N.");
+
         this.addHelp("n_daily_step_label","When N-day averaging is requested, specify the number of days N.");
         this.addHelp("start_date_label","Set a start date for the regridded data set.");
         this.addHelp("end_date_label","Set an end date for the regridded data set.");
         this.addHelp("consent","You must consent to...");
 
         // regrid specific
-        this.addHelp("latitude_step_label","The target latitude resolution. This must be a multiple of 0.05 degrees and a factor of 180 degrees. It must also not be greater than 5 degrees.");
-        this.addHelp("longitude_step_label","The target longitude resolution. This must be a multiple of 0.05 degrees and a factor of 360 degrees. It must also not be greater than 5 degrees.");
+        this.addHelp("spatial_resolution_label","Select the target latitude resolution.");
 
         // time series/region specific
-        this.addHelp("bounding_box_longitude_centre_label","Set the degrees of longitude of the centre of the bounding box over which the "+this.job_label+" will be computed.  As the box width is adjusted this will be automatically slightly adjusted so that the bounding box is aligned to the 0.05 grid.");
-        this.addHelp("bounding_box_longitude_width_label","Set the width in degrees of longitude of the bounding box over which the "+this.job_label+" will be computed.  Must be a multiple of 0.05 degrees and no more than "+this.bb_max_size+" degrees.");
-        this.addHelp("bounding_box_latitude_centre_label","Set the degrees of latitude of the centre of the bounding box over which the "+this.job_label+" will be computed.  As the box height is adjusted this will be automatically slightly adjusted so that the bounding box is aligned to the 0.05 grid.");
-        this.addHelp("bounding_box_latitude_height_label","Set the height in degrees of latitude of the bounding box over which the "+this.job_label+" will be computed.  Must be a multiple of 0.05 degrees and no more than "+this.bb_max_size+" degrees.");
+        this.addHelp("longitude_min_label","Set the degrees of longitude of the western edge of the bounding box over which the data will be computed.");
+        this.addHelp("longitude_max_label","Set the degrees of longitude of the eastern edge of the bounding box over which the data will be computed.");
+        this.addHelp("latitude_min_label","Set the degrees of latitude of the southern edge of the bounding box over which the data will be computed.");
+        this.addHelp("latitude_max_label","Set the degrees of latitude of the northern edge of the bounding box over which the data will be computed.");
 
         // time series specific
         this.addHelp("output_format_label","Choose the output format.");
@@ -144,8 +141,8 @@ class Form {
         // the handlers will typically enable, reconfigure or disable other controls, or clear validity reports
 
         this.consent.addEventListener("change", function() {
-           if (that.consent_optin.checked) {
-                that.consent_optin.setCustomValidity("");
+           if (that.consent.checked) {
+                that.consent.setCustomValidity("");
             }
         });
 
@@ -164,28 +161,27 @@ class Form {
             that.configureViewButton();
         });
 
-        this.bounding_box_latitude_centre.addEventListener("change",function() {
-            that.requested_lat = that.bounding_box_latitude_centre.value;
+        this.latitude_min.addEventListener("change",function() {
+            that.requested_lat = that.calculateCentreLat();
             that.updateBoundingBox();
         });
 
-        this.bounding_box_longitude_centre.addEventListener("change",function() {
-            that.requested_lon = that.bounding_box_longitude_centre.value;
+        this.latitude_max.addEventListener("change",function() {
+            that.requested_lat = that.calculateCentreLat();
             that.updateBoundingBox();
         });
 
-        this.bounding_box_longitude_width.addEventListener("change",function() {
-            that.bounding_box_longitude_centre.value = that.requested_lon;
+        this.longitude_min.addEventListener("change",function() {
+            that.requested_lon = that.calculateCentreLon();
             that.updateBoundingBox();
         });
 
-        this.bounding_box_latitude_height.addEventListener("change",function() {
-            that.bounding_box_latitude_centre.value = that.requested_lat;
+        this.longitude_max.addEventListener("change",function() {
+            that.requested_lon = that.calculateCentreLon();
             that.updateBoundingBox();
         });
 
-        var latitude_resolutions = ["0.1", "0.15", "0.2", "0.25", "0.3", "0.4", "0.45", "0.5", "0.6", "0.75", "0.8", "0.9", "1.0", "1.2", "1.25", "1.5", "1.8", "2.0", "2.25", "2.4", "2.5", "3.0", "3.6", "3.75", "4.0", "4.5", "5.0"];
-        var longitude_resolutions = ["0.1", "0.15", "0.2", "0.25", "0.3", "0.4", "0.45", "0.5", "0.6", "0.75", "0.8", "0.9", "1.0", "1.2", "1.25", "1.5", "1.6", "1.8", "2.0", "2.25", "2.4", "2.5", "3.0", "3.6", "3.75", "4.0", "4.5", "4.8", "5.0"];
+        var spatial_resolutions = ["0.1", "0.15", "0.2", "0.25", "0.3", "0.4", "0.45", "0.5", "0.6", "0.75", "0.8", "0.9", "1.0", "1.2", "1.25", "1.5", "1.8", "2.0", "2.25", "2.4", "2.5", "3.0", "3.6", "3.75", "4.0", "4.5", "5.0"];
 
         var time_resolutions = [];
         time_resolutions.push(["annual","Annual"]);
@@ -197,14 +193,12 @@ class Form {
 
         this.configureSelect("time_step", time_resolutions, true);
 
-        this.configureSelect("latitude_step",latitude_resolutions, false,false);
-        this.configureSelect("longitude_step",longitude_resolutions, false,false);
+        this.configureSelect("spatial_resolution",spatial_resolutions, false,false);
 
         this.configureBoundingBoxMap();
 
         this.time_step.value = "5-day";
-        this.latitude_step.value = "0.5";
-        this.longitude_step.value = "0.5";
+        this.spatial_resolution.value = "0.5";
 
         // the view button shows and hides a list of the user's jobs
         this.view_btn.addEventListener('click', function(event) {
@@ -274,14 +268,11 @@ class Form {
     }
 
     requestTypeUpdated() {
-        alert(this.request_type.value);
         if (this.request_type.value == "timeseries") {
-            this.hideElement(this.longitude_step_group);
-            this.hideElement(this.latitude_step_group);
+            this.hideElement(this.spatial_resolution_group);
             this.configureSelect("output_format",[["csv","CSV"],["netcdf","NetCDF4"]],true,true);
         } else {
-            this.showElement(this.longitude_step_group);
-            this.showElement(this.latitude_step_group);
+            this.showElement(this.spatial_resolution_group);
             this.configureSelect("output_format",[["geotiff","GeoTIFF"],["netcdf","NetCDF4"]],true,true);
         }
     }
@@ -303,58 +294,26 @@ class Form {
         this.updateBoundingBox();
     }
 
-    computeMinLongitude(lon_centre,lon_width) {
-        var lon_min = lon_centre - lon_width/2.0;
-        // snap to 0.05 grid
-        return Math.round(lon_min*20)/20
+    calculateCentreLat() {
+        var lat_min = Number.parseFloat(this.latitude_min.value);
+        var lat_max = Number.parseFloat(this.latitude_max.value);
+        return (lat_min+lat_max) / 2.0;
     }
 
-    computeMinLatitude(lat_centre,lat_height) {
-        var lat_min = lat_centre - lat_height/2.0;
-        // snap to 0.05 grid
-        return Math.round(lat_min*20)/20;
+    calculateCentreLon() {
+        var lon_min = Number.parseFloat(this.longitude_min.value);
+        var lon_max = Number.parseFloat(this.longitude_max.value);
+        return (lon_min+lon_max) / 2.0;
     }
 
     updateBoundingBox() {
-        var centre_lon = Number.parseFloat(this.bounding_box_longitude_centre.value);
-        var lon_width = Number.parseFloat(this.bounding_box_longitude_width.value);
-        var centre_lat = Number.parseFloat(this.bounding_box_latitude_centre.value);
-        var lat_height = Number.parseFloat(this.bounding_box_latitude_height.value);
+        var lon_min = Number.parseFloat(this.longitude_min.value);
+        var lon_max = Number.parseFloat(this.longitude_max.value);
+        var lat_min = Number.parseFloat(this.latitude_min.value);
+        var lat_max = Number.parseFloat(this.latitude_max.value);
 
-        // first adjust the width and height to be on a 0.05 grid
-        if (lon_width < 0.05) {
-            lon_width = 0.05;
-            this.bounding_box_longitude_width.value = "0.05";
-        } else if (lon_width > this.bb_max_size) {
-            lon_width = this.bb_max_size;
-            this.bounding_box_longitude_width.value = ""+this.bb_max_size;
-        } else {
-            lon_width = this.snapToGridFloat(lon_width);
-            this.bounding_box_longitude_width.value = this.snapToGrid(this.bounding_box_longitude_width.value);
-        }
 
-        if (lat_height < 0.05) {
-            lat_height = 0.05;
-            this.bounding_box_latitude_height.value = "0.05";
-        } else if (lat_height > this.bb_max_size) {
-            lat_height = this.bb_max_size;
-            this.bounding_box_latitude_height.value = ""+this.bb_max_size;
-        } else {
-            lat_height = this.snapToGridFloat(lat_height);
-            this.bounding_box_latitude_height.value = this.snapToGrid(this.bounding_box_latitude_height.value);
-        }
-
-        // now we need to adjust the lon (lat) center so that the box boundaries lie exactly on a 0.05 grid
-        var min_lon = this.computeMinLongitude(centre_lon,lon_width);
-        var min_lat = this.computeMinLatitude(centre_lat,lat_height);
-
-        var bounds = [[min_lat, min_lon], [min_lat+lat_height, min_lon+lon_width]];
-
-        var center_lat = min_lat + lat_height*0.5;
-        var center_lon = min_lon + lon_width*0.5;
-
-        this.bounding_box_latitude_centre.value = this.depictCenterLatLon(center_lat);
-        this.bounding_box_longitude_centre.value = this.depictCenterLatLon(center_lon);
+        var bounds = [[lat_min, lon_min], [lat_max, lon_max]];
 
         // create an red rectangle
         if (this.bb_rect) {
@@ -365,32 +324,6 @@ class Form {
         this.map.fitBounds(bounds,{"maxZoom":this.map.getZoom()});
     }
 
-    snapToGridFloat(value) {
-        // convert value from string to float and then to nearest multiple of 0.05
-        var f = Number.parseFloat(value);
-        return (Math.round(f*20)/20);
-    }
-
-    snapToGrid(value) {
-        // convert value from string to float and then to nearest multiple of 0.05, return as string
-        return this.snapToGridFloat(value).toFixed(2);
-    }
-
-    depictCenterLatLon(lat_or_lon) {
-        // convert a floating point value to a string and return it
-        // use the minimum number of decimal places while avoiding truncation
-        // assume that the maximum number of decimal places is 3
-        var n = 3;
-        var s = "";
-        while(n >= 0) {
-            s = lat_or_lon.toFixed(n);
-            if (!s.endsWith("0")) {
-                return s;
-            }
-            n = n-1;
-        }
-        return s;
-    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // form setup and configuration
@@ -723,6 +656,17 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
         }
     }
 
+    getValuesFromSelect(select_ele) {
+        let values = [];
+        let options = select_ele.querySelectorAll("option");
+        options.forEach((option) => {
+            if (option.selected) {
+                values.push(option.value);
+            }
+        });
+        return values;
+    }
+
     removeAlert(control) {
         // clear a validity alert on a control and remove it from the list of controls
         // used when a control is about to go out of focus
@@ -770,32 +714,32 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
             }
         }
 
-        // check latitude min and height
-        var bb_lat_min = Number.parseFloat(this.bounding_box_latitude_centre.value);
-        if (Number.isNaN(bb_lat_min) || bb_lat_min < -90.0 || bb_lat_min > 90.0) {
-            this.bounding_box_latitude_centre.setCustomValidity("The latitude value must lie in the range from -90 to 90 degrees");
-            this.bounding_box_latitude_centre.reportValidity();
-            this.alerted_controls.push(this.bounding_box_latitude_centre);
+        // check latitude min max
+        var lat_min = Number.parseFloat(this.latitude_min.value);
+        if (Number.isNaN(lat_min) || lat_min < -90.0 || lat_min > 90.0) {
+            this.latitude_min.setCustomValidity("The min latitude value is invalid");
+            this.latitude_min.reportValidity();
+            this.alerted_controls.push(this.latitude_min);
         }
-        var bb_lat_height = Number.parseFloat(this.bounding_box_latitude_height.value);
-        if (Number.isNaN(bb_lat_height) || bb_lat_height < 0.05 || bb_lat_height > this.bb_max_size) {
-            this.bounding_box_latitude_height.setCustomValidity("The latitude box height must lie in the range from 0.05 to "+this.bb_max_size+" degrees");
-            this.bounding_box_latitude_height.reportValidity();
-            this.alerted_controls.push(this.bounding_box_latitude_height);
+        var lat_max = Number.parseFloat(this.latitude_max.value);
+        if (Number.isNaN(lat_max) || lat_max < -90.0 || lat_max > 90.0 || lat_max <= lat_min) {
+            this.latitude_max.setCustomValidity("The max latitude value is invalid");
+            this.latitude_max.reportValidity();
+            this.alerted_controls.push(this.latitude_max);
         }
 
-        // check longitude min and width
-        var bb_lon_min = Number.parseFloat(this.bounding_box_longitude_centre.value);
-        if (Number.isNaN(bb_lon_min) || bb_lon_min < -180.0 || bb_lon_min > 180.0) {
-            this.bounding_box_longitude_centre.setCustomValidity("The longitude value must lie in the range from -180 to 180 degrees");
-            this.bounding_box_longitude_centre.reportValidity();
-            this.alerted_controls.push(this.bounding_box_longitude_centre);
+        // check longitude min max
+        var lon_min = Number.parseFloat(this.longitude_min.value);
+        if (Number.isNaN(lon_min) || lon_min < -180.0 || lon_min > 180.0) {
+            this.longitude_min.setCustomValidity("The min longitude value is invalid");
+            this.longitude_min.reportValidity();
+            this.alerted_controls.push(this.longitude_min);
         }
-        var bb_lon_width = Number.parseFloat(this.bounding_box_longitude_width.value);
-        if (Number.isNaN(bb_lon_width) || bb_lon_width < 0.05 || bb_lon_width > this.bb_max_size) {
-            this.bounding_box_longitude_width.setCustomValidity("The longitude box width must lie in the range from 0.05 to "+this.bb_max_size+" degrees");
-            this.bounding_box_longitude_width.reportValidity();
-            this.alerted_controls.push(this.bounding_box_longitude_width);
+        var lon_max = Number.parseFloat(this.longitude_max.value);
+        if (Number.isNaN(lon_max) || lon_max < -180.0 || lon_max > 180.0 || lon_max <= lon_min) {
+            this.longitude_max.setCustomValidity("The max longitude value is invalid");
+            this.longitude_max.reportValidity();
+            this.alerted_controls.push(this.longitude_max);
         }
 
         return (this.alerted_controls.length == 0);
@@ -808,14 +752,8 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
 
         var that = this;
 
-        var start_date_value = "";
-        var end_date_value = "";
-
         let start_date = this.dt_picker.get_start_date();
         let end_date = this.dt_picker.get_end_date();
-
-        start_date_value = start_date.getFullYear()+"-"+this.makeTwoDigits(1+start_date.getMonth())+"-"+this.makeTwoDigits(start_date.getDate());
-        end_date_value = end_date.getFullYear()+"-"+this.makeTwoDigits(1+end_date.getMonth())+"-"+this.makeTwoDigits(end_date.getDate());
 
         if (this.isFormValid()) {
 
@@ -823,28 +761,29 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
 
             // create the specification for the job to pass to the service
             var spec = {
-                "time_step":this.time_step.value,
-                "n_daily_step":this.daily_time_step.value,
-                "submitter_id":this.submitter_id.value,
-                "start_date":start_date_value,
-                "end_date":end_date_value,
-                "consent":this.consent.checked,
-                "include_bias_adjustments":this.include_bias_adjustments.checked
+                "BUNDLE_ID":this.bundle.value,
+                "VARIABLES": this.getValuesFromSelect(this.variables),
+                "TEMPORAL_RESOLUTION":this.time_step.value,
+                "N_DAILY_STEP":this.daily_time_step.value,
+                "SUBMITTER_ID":this.submitter_id.value,
+                "START_YEAR":start_date.getFullYear(),
+                "START_MONTH": start_date.getMonth()+1,
+                "START_DAY": start_date.getDate(),
+                "END_YEAR": end_date.getFullYear(),
+                "END_MONTH": end_date.getMonth()+1,
+                "END_DAY": end_date.getDate()
             }
 
+            spec["LON_MIN"] = Number.parseFloat(this.longitude_min.value);
+            spec["LAT_MIN"] = Number.parseFloat(this.latitude_min.value);
+            spec["LON_MAX"] = Number.parseFloat(this.longitude_max.value);
+            spec["LAT_MAX"] = Number.parseFloat(this.latitude_max.value);
 
-            var min_lon = this.computeMinLongitude(this.bounding_box_longitude_centre.value,this.bounding_box_longitude_width.value);
-            var min_lat = this.computeMinLatitude(this.bounding_box_latitude_centre.value,this.bounding_box_latitude_height.value);
+            spec["OUTPUT_FORMAT"] = this.output_format.value;
 
-            spec["bounding_box_longitude_min"] = min_lon;
-            spec["bounding_box_longitude_width"] = this.bounding_box_longitude_width.value;
-            spec["bounding_box_latitude_min"] = min_lat;
-            spec["bounding_box_latitude_height"] = this.bounding_box_latitude_height.value;
-            spec["output_format"] = this.output_format.value;
+            spec["SPATIAL_RESOLUTION"] = this.spatial_resolution.value;
 
-            spec["longitude_step"] = this.longitude_step.value;
-            spec["latitude_step"] = this.latitude_step.value;
-
+            alert(JSON.stringify(spec));
 
             // console.log("Posting job with spec: "+JSON.stringify(spec,null,2));
 

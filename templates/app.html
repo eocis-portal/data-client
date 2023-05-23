@@ -142,24 +142,13 @@
                             </select>
                         </td>
                     </tr>
-                    <tr id="longitude_step_group">
-                        <td><label class="mainlabel" for="longitude_step" id="longitude_step_label">Spatial Resolution -
-                            Longitude (degrees)</label></td>
+                    <tr id="spatial_resolution_group">
+                        <td><label class="mainlabel" for="spatial_resolution" id="spatial_resolution_label">Spatial Resolution (degrees)</label></td>
                         <td colspan="2">
-                            <select name="longitude_step" id="longitude_step">
+                            <select name="spatial_resolution" id="spatial_resolution">
                             </select>
                         </td>
                     </tr>
-                    <tr id="latitude_step_group">
-                        <td><label class="mainlabel" for="latitude_step" id="latitude_step_label">Spatial Resolution -
-                            Latitude
-                            (degrees)</label></td>
-                        <td colspan="2">
-                            <select name="latitude_step" id="latitude_step">
-                            </select>
-                        </td>
-                    </tr>
-
                     <tr>
                         <td>
                             <label class="mainlabel" for="start_date_year" id="start_date_label">Start Date</label>
@@ -208,30 +197,28 @@
                     </tr>
 
                     <tr>
-                        <td><label class="mainlabel" for="bounding_box_longitude_centre" id="bounding_box_longitude_centre_label">Longitude
-                            of bounding box (degrees east)</label></td>
+                        <td><label class="mainlabel" for="longitude_min" id="longitude_min_label">Min Longitude (degrees east)</label></td>
                         <td><input type="number" value="0" min="-180" max="180" step="any"
-                                   id="bounding_box_longitude_centre"/></td>
+                                   id="longitude_min"/></td>
                         <td rowspan="4">
                             <div id="bounding_box_map" style="width:400px;height:250px;"></div>
                         </td>
                     </tr>
                     <tr>
-                        <td><label class="mainlabel" for="bounding_box_latitude_centre" id="bounding_box_latitude_centre_label">Latitude
-                            of bounding box (degrees north)</label></td>
-                        <td><input type="number" value="0" min="-180" max="180" step="any" id="bounding_box_latitude_centre"/>
+                        <td><label class="mainlabel" for="longitude_max"
+                                   id="longitude_max_label">Min Longitude (degrees east)</label></td>
+                        <td><input type="number" value="2" min="0.05" step="0.05" id="longitude_max"/>
                         </td>
                     </tr>
                     <tr>
-                        <td><label class="mainlabel" for="bounding_box_longitude_width"
-                                   id="bounding_box_longitude_width_label">Width in degrees</label></td>
-                        <td><input type="number" value="2" min="0.05" step="0.05" id="bounding_box_longitude_width"/>
+                        <td><label class="mainlabel" for="latitude_min" id="latitude_min_label">Min Latitude (degrees north)</label></td>
+                        <td><input type="number" value="0" min="-180" max="180" step="any" id="latitude_min"/>
                         </td>
                     </tr>
                     <tr>
-                        <td><label class="mainlabel" for="bounding_box_latitude_height"
-                                   id="bounding_box_latitude_height_label">Height in degrees</label></td>
-                        <td><input type="number" value="2" min="0.05" step="0.05" id="bounding_box_latitude_height"/>
+                        <td><label class="mainlabel" for="latitude_max"
+                                   id="latitude_max_label">Max Latitude (degrees north)</label></td>
+                        <td><input type="number" value="2" min="0.05" step="0.05" id="latitude_max"/>
                         </td>
                     </tr>
 

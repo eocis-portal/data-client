@@ -25,6 +25,7 @@ from flask import Flask, render_template, request, send_from_directory, abort, j
 
 from eocis_data_manager.store import Store
 from eocis_data_manager.schema_operations import SchemaOperations
+from eocis_data_manager.job_manager import JobManager
 from eocis_data_manager.job_operations import JobOperations
 from eocis_data_manager.job import Job
 
@@ -90,8 +91,12 @@ class App:
                 job = Job.create(request.json)
                 t.createJob(job)
                 job_id = job.getJobId()
-                msg = "Thank you.  Your job was successfully submitted and has been assigned the JOB-ID: %s. " % (job.getJobId())
-                return jsonify({"job_id":job_id,"message":msg})
+
+            jm = JobManager(store)
+            jm.create_tasks(job_id)
+
+            msg = "Thank you.  Your job was successfully submitted and has been assigned the JOB-ID: %s. " % (job_id)
+            return jsonify({"job_id":job_id,"message":msg})
         except:
             App.logger.exception("submit")
             return jsonify({"message": GENERIC_ERROR})
