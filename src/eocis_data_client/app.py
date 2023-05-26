@@ -114,6 +114,7 @@ class App:
             with JobOperations(store) as t:
                 running_job_count = t.countJobsByState([Job.STATE_RUNNING])
                 jobs = t.listJobsBySubmitterId(submitter_id)
+                print(jobs)
                 for job in jobs:
                     job_detail = job.serialise(t)
                     # if job.getState() == Job.STATE_COMPLETED:
