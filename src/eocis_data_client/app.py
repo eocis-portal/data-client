@@ -146,7 +146,8 @@ class App:
         variables = []
         for ds in t.listDataSets():
             for variable in ds.variables:
-                variables.append({"id":variable.variable_id,"variable_name":variable.variable_name,"dataset_name":ds.dataset_name})
+                variable_id = ds.dataset_id + ":" + variable.variable_id
+                variables.append({"id":variable_id,"variable_name":variable.variable_name,"dataset_name":ds.dataset_name})
         return jsonify(variables)
 
     ####################################################################################################################
