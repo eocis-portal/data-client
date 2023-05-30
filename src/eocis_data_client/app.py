@@ -21,6 +21,8 @@ import os.path
 import sys
 import logging
 
+logging.basicConfig(level=logging.DEBUG)
+
 from flask import Flask, render_template, request, send_from_directory, abort, jsonify
 
 from eocis_data_manager.store import Store
@@ -40,7 +42,7 @@ app = Flask(__name__,template_folder=os.path.join(rootdir,"templates"))
 
 app.config.from_object('eocis_data_manager.config.Config')
 
-output_folder = os.path.join(app.config["OUTPUT_PATH"],"data")
+output_folder = app.config["OUTPUT_PATH"]
 
 # open the database containing the list of active jobs
 store = Store(app.config["DATABASE_PATH"])
@@ -63,6 +65,15 @@ default_end_month = app.config["DEFAULT_END_MONTH"]
 
 task_quota = app.config["TASK_QUOTA"]
 job_quota = app.config["JOB_QUOTA"]
+
+TIME_STEP_LABELS = {
+    "annual": "Annual",
+    "N-daily": "N-day periods within year",
+    "monthly": "Monthly",
+    "10-day": "10 day periods within month",
+    "5-day": "5 day periods within month",
+    "daily": "Daily"
+}
 
 
 GENERIC_ERROR = "An internal error occurred and it was not possible to complete your request."
@@ -87,11 +98,13 @@ class App:
     def submit():
         """Handle submitted form.  Perform server side validation and add a new job into the database."""
         try:
+            # create a job
             with JobOperations(store) as t:
                 job = Job.create(request.json)
-                t.createJob(job)
-                job_id = job.getJobId()
+                t.create_job(job)
+                job_id = job.get_job_id()
 
+            # create tasks from the job and queue them for execution
             jm = JobManager(store)
             jm.create_tasks(job_id)
 
@@ -112,14 +125,14 @@ class App:
             job_list = []
 
             with JobOperations(store) as t:
-                running_job_count = t.countJobsByState([Job.STATE_RUNNING])
-                jobs = t.listJobsBySubmitterId(submitter_id)
-                print(jobs)
+                running_job_count = t.count_jobs_by_state([Job.STATE_RUNNING])
+                jobs = t.list_jobs_by_submitter_id(submitter_id)
+                jm = JobManager(store)
                 for job in jobs:
                     job_detail = job.serialise(t)
-                    # if job.getState() == Job.STATE_COMPLETED:
-                    #    job_detail["download_links"] = \
-                    #        [[label,url] for (label,url) in monitor.collectDownloadLinks(job.getJobId())]
+                    if job.get_state() == Job.STATE_COMPLETED:
+                        job_detail["download_links"] = \
+                             [[label,url] for (label,url) in jm.collect_download_links(job.get_job_id())]
                     job_list.append(job_detail)
 
             return jsonify({"jobs": job_list, "running_jobs": running_job_count})
@@ -136,20 +149,32 @@ class App:
     def get_bundles():
         t = SchemaOperations(store)
         bundles = []
-        for b in t.listBundles():
-            bundles.append({"id": b.bundle_id, "name": b.bundle_name})
+        for b in t.list_bundles():
+            bundles.append({"id": b.bundle_id, "name": b.bundle_name, "spec":b.spec})
         return jsonify(bundles)
 
     @staticmethod
-    @app.route('/metadata/bundles/<bundle>/variables', methods=['GET'])
-    def get_variables(bundle=None):
-        t = SchemaOperations(store)
-        variables = []
-        for ds in t.listDataSets():
-            for variable in ds.variables:
-                variable_id = ds.dataset_id + ":" + variable.variable_id
-                variables.append({"id":variable_id,"variable_name":variable.variable_name,"dataset_name":ds.dataset_name})
-        return jsonify(variables)
+    @app.route('/metadata/bundles/<bundle_id>', methods=['GET'])
+    def get_variables(bundle_id=None):
+
+        with SchemaOperations(store) as t:
+            bundle = t.get_bundle(bundle_id)
+            spatial_resolutions = []
+            temporal_resolutions = []
+            for resolution in bundle.spec["spatial_resolutions"]:
+                spatial_resolutions.append([resolution,resolution])
+            for resolution in bundle.spec["temporal_resolutions"]:
+                temporal_resolutions.append([resolution,TIME_STEP_LABELS[resolution]])
+
+            variables = []
+            for ds_id in bundle.dataset_ids:
+                ds = t.get_dataset(ds_id)
+                for variable in ds.variables:
+                    variable_id = ds.dataset_id + ":" + variable.variable_id
+                    variables.append({"id":variable_id,"variable_name":variable.variable_name,"dataset_name":ds.dataset_name})
+        return jsonify({"variables":variables,
+                        "spatial_resolutions": spatial_resolutions,
+                        "temporal_resolutions": temporal_resolutions})
 
     ####################################################################################################################
     # Service static files
@@ -196,7 +221,7 @@ class App:
         return send_from_directory(os.path.join(rootdir,'static','images'), 'favicon.ico')
 
     @staticmethod
-    @app.route('/data/<path:path>', methods=['GET'])
+    @app.route('/outputs/<path:path>', methods=['GET'])
     def send_data(path):
         """serve data files"""
         if os.path.exists(os.path.join(output_folder,path)):

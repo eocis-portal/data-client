@@ -34,6 +34,10 @@ class Form {
         var that = this;
         this.submitter_id = $("submitter_id");
         this.bundle = $("bundle");
+        this.bundle.addEventListener("change", (evt) => {
+            this.bundleUpdated();
+        });
+
         this.variables = $("variables");
         this.time_step = $("time_step");
         this.spatial_resolution = $("spatial_resolution");
@@ -181,20 +185,6 @@ class Form {
             that.updateBoundingBox();
         });
 
-        var spatial_resolutions = ["0.1", "0.15", "0.2", "0.25", "0.3", "0.4", "0.45", "0.5", "0.6", "0.75", "0.8", "0.9", "1.0", "1.2", "1.25", "1.5", "1.8", "2.0", "2.25", "2.4", "2.5", "3.0", "3.6", "3.75", "4.0", "4.5", "5.0"];
-
-        var time_resolutions = [];
-        time_resolutions.push(["annual","Annual"]);
-        time_resolutions.push(["N-daily","N-day periods within year"]);
-        time_resolutions.push(["monthly","Monthly"]);
-        time_resolutions.push(["10-day","10 day periods within month"]);
-        time_resolutions.push(["5-day","5 day periods within month"]);
-        time_resolutions.push(["daily","Daily"]);
-
-        this.configureSelect("time_step", time_resolutions, true);
-
-        this.configureSelect("spatial_resolution",spatial_resolutions, false,false);
-
         this.configureBoundingBoxMap();
 
         this.time_step.value = "5-day";
@@ -243,19 +233,25 @@ class Form {
     }
 
     setBundles(bundle_list) {
+        let options = [];
         bundle_list.forEach((bundle) => {
-            let elt = document.createElement("option");
-            elt.appendChild(document.createTextNode(bundle.name));
-            elt.setAttribute("value",bundle.id);
-            this.bundle.appendChild(elt);
+            options.push([bundle.id, bundle.name]);
         });
-        if (bundle_list.length) {
-            this.loadVariables(bundle_list[0].id);
-        }
+        this.configureSelect("bundle",options, true,true);
+        this.bundleUpdated();
     }
 
-    loadVariables(bundle_id) {
-        fetch("/metadata/bundles/"+bundle_id+"/variables").then(r => r.json()).then(obj => this.setVariables(obj));
+    bundleUpdated() {
+        let bundle_id = this.bundle.value;
+        this.loadBundle(bundle_id);
+    }
+
+    loadBundle(bundle_id) {
+        fetch("/metadata/bundles/"+bundle_id).then(r => r.json()).then(obj => {
+            this.setVariables(obj["variables"]);
+            this.setSpatialResolution(obj["spatial_resolutions"]);
+            this.setTemporalResolution(obj["temporal_resolutions"]);
+        });
     }
 
     setVariables(variable_list) {
@@ -267,12 +263,20 @@ class Form {
         });
     }
 
+    setSpatialResolution(spatial_resolutions) {
+        this.configureSelect("spatial_resolution", spatial_resolutions, true,false);
+    }
+
+    setTemporalResolution(temporal_resolutions) {
+        this.configureSelect("time_step", temporal_resolutions, true,false);
+    }
+
     requestTypeUpdated() {
         if (this.request_type.value == "timeseries") {
-            this.hideElement(this.spatial_resolution_group);
+            this.hideRow(this.spatial_resolution_group);
             this.configureSelect("output_format",[["csv","CSV"],["netcdf","NetCDF4"]],true,true);
         } else {
-            this.showElement(this.spatial_resolution_group);
+            this.showRow(this.spatial_resolution_group);
             this.configureSelect("output_format",[["geotiff","GeoTIFF"],["netcdf","NetCDF4"]],true,true);
         }
     }
@@ -353,12 +357,12 @@ class Form {
         }
     }
 
-    hideElement(control) {
+    hideRow(control) {
         control.setAttribute("style","display:none;");
     }
 
-    showElement(control) {
-        control.setAttribute("style","display:block;");
+    showRow(control) {
+        control.setAttribute("style","display:table-row;");
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -740,6 +744,14 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
             this.longitude_max.setCustomValidity("The max longitude value is invalid");
             this.longitude_max.reportValidity();
             this.alerted_controls.push(this.longitude_max);
+        }
+
+        // check at least 1 variable is selected
+        let selected_variables = this.getValuesFromSelect(this.variables);
+        if (selected_variables.length == 0) {
+            this.variables.setCustomValidity("At least one variable must be selected");
+            this.variables.reportValidity();
+            this.alerted_controls.push(this.variables);
         }
 
         return (this.alerted_controls.length == 0);
