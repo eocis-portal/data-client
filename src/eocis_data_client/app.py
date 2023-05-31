@@ -20,6 +20,7 @@
 import os.path
 import sys
 import logging
+import os
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -30,27 +31,22 @@ from eocis_data_manager.schema_operations import SchemaOperations
 from eocis_data_manager.job_manager import JobManager
 from eocis_data_manager.job_operations import JobOperations
 from eocis_data_manager.job import Job
-
-import os
+from eocis_data_manager.config import Config
+from eocis_data_manager.time_steps import TimeSteps
 
 # flask initialisation and configuration (see config.py)
 
 rootdir = os.path.abspath(os.path.join(os.path.split(__file__)[0],"..",".."))
-print(rootdir)
 
 app = Flask(__name__,template_folder=os.path.join(rootdir,"templates"))
 
-app.config.from_object('eocis_data_manager.config.Config')
+
+app.config.from_object(Config)
 
 output_folder = app.config["OUTPUT_PATH"]
 
-# open the database containing the list of active jobs
+# obtain the persistent store
 store = Store(app.config["DATABASE_PATH"])
-with SchemaOperations(store) as t:
-    # load the schema into the database
-    t.populate_schema("/home/dev/github/data-manager/test/schema")
-
-
 
 start_year = app.config["START_YEAR"]
 start_month = app.config["START_MONTH"]
@@ -67,14 +63,22 @@ task_quota = app.config["TASK_QUOTA"]
 job_quota = app.config["JOB_QUOTA"]
 
 TIME_STEP_LABELS = {
-    "annual": "Annual",
-    "N-daily": "N-day periods within year",
-    "monthly": "Monthly",
-    "10-day": "10 day periods within month",
-    "5-day": "5 day periods within month",
-    "daily": "Daily"
+    TimeSteps.ANNUAL: "Annual",
+    TimeSteps.N_DAILY: "N-day periods within year",
+    TimeSteps.MONTHLY: "Monthly",
+    TimeSteps.DEKAD: "10 day periods within month",
+    TimeSteps.PENTAD: "5 day periods within month",
+    TimeSteps.DAILY: "Daily"
 }
 
+
+def collect_download_links(job_id: str):
+    links = []
+    output_path = os.path.join(Config.OUTPUT_PATH, job_id)
+    for filename in os.listdir(output_path):
+        if filename.endswith(".zip"):
+            links.append((filename, "/outputs/" + job_id + "/" + filename))
+    return links
 
 GENERIC_ERROR = "An internal error occurred and it was not possible to complete your request."
 
@@ -132,7 +136,7 @@ class App:
                     job_detail = job.serialise(t)
                     if job.get_state() == Job.STATE_COMPLETED:
                         job_detail["download_links"] = \
-                             [[label,url] for (label,url) in jm.collect_download_links(job.get_job_id())]
+                             [[label,url] for (label,url) in collect_download_links(job.get_job_id())]
                     job_list.append(job_detail)
 
             return jsonify({"jobs": job_list, "running_jobs": running_job_count})
@@ -164,7 +168,7 @@ class App:
             for resolution in bundle.spec["spatial_resolutions"]:
                 spatial_resolutions.append([resolution,resolution])
             for resolution in bundle.spec["temporal_resolutions"]:
-                temporal_resolutions.append([resolution,TIME_STEP_LABELS[resolution]])
+                temporal_resolutions.append([resolution,TIME_STEP_LABELS[TimeSteps(resolution)]])
 
             variables = []
             for ds_id in bundle.dataset_ids:
