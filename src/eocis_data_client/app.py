@@ -34,6 +34,8 @@ from eocis_data_manager.job import Job
 from eocis_data_manager.config import Config
 from eocis_data_manager.time_steps import TimeSteps
 
+from job_formatter import get_html_description
+
 # flask initialisation and configuration (see config.py)
 
 rootdir = os.path.abspath(os.path.join(os.path.split(__file__)[0],"..",".."))
@@ -134,6 +136,7 @@ class App:
                 jm = JobManager(store)
                 for job in jobs:
                     job_detail = job.serialise(t)
+                    job_detail["html_description"] = get_html_description(job)
                     if job.get_state() == Job.STATE_COMPLETED:
                         job_detail["download_links"] = \
                              [[label,url] for (label,url) in collect_download_links(job.get_job_id())]

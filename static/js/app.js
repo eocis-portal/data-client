@@ -20,7 +20,6 @@ function removeValue(arr,v) {
 // (3) check the form is valid if the user wants to submit it, and report any problems
 // (4) manage the submission of requests to the service:
 //     * submit form
-//     * resend e-mail for completed job
 //     * retrieve list of jobs for a user
 
 class Form {
@@ -423,7 +422,7 @@ class Form {
                 var running_tasks = job["running_tasks"];
                 var completed_tasks = job["completed_tasks"];
                 var failed_tasks = job["failed_tasks"];
-                var spec_html = job["spec_html"];
+                var html_description = job["html_description"];
                 var download_links = job["download_links"];
 
                 for(var jdx=0; jdx<date_columns.length; jdx++) {
@@ -478,7 +477,7 @@ class Form {
 
                         var details = document.createElement("div");
                         td.appendChild(details);
-                        var toggleFn = this.createViewParametersCallback(spec_html,btn,details,job_id);
+                        var toggleFn = this.createViewParametersCallback(html_description,btn,details,job_id);
                         if (!(job_id in this.job_parameters_open)) {
                             this.job_parameters_open[job_id] = false;
                         } else {
@@ -489,13 +488,6 @@ class Form {
                             }
                         }
                         btn.onclick = toggleFn;
-                    }
-                    if (columns[jdx] == "state" && job["state"] == "COMPLETED") {
-                        var btn = document.createElement("button");
-                        var btxt = document.createTextNode("Resend Email");
-                        btn.appendChild(btxt);
-                        btn.onclick = this.createResendCallback(job_id);
-                        td.appendChild(btn);
                     }
                     tr.appendChild(td);
                 }
@@ -524,38 +516,6 @@ class Form {
             that.job_parameters_open[job_id] = !that.job_parameters_open[job_id];
         }
     }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // resend mail callback
-    //
-
-    createResendCallback(job_id) {
-        var that = this;
-        return function() {
-            that.resend(job_id);
-        }
-    }
-
-    resend(job_id) {
-        fetch('/resend.json',{
-            method: 'POST',
-            mode: 'same-origin',
-            cache: 'no-cache',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            redirect: 'follow',
-            referrerPolicy: 'no-referrer',
-            body: JSON.stringify({"job_id":job_id})
-        }).then((response) => {
-            return response.json();
-        }).then((data) => {
-            alert("E-mail Sent!");
-        });
-    }
-
-
 
     // -----------------------------------------------------------------------------------------------------------------
     // Utility functions
