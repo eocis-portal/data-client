@@ -40,7 +40,7 @@ from job_formatter import get_html_description
 
 rootdir = os.path.abspath(os.path.join(os.path.split(__file__)[0],"..",".."))
 
-app = Flask(__name__,template_folder=os.path.join(rootdir,"templates"))
+app = Flask(__name__,static_folder=os.path.join(rootdir,"static"),static_url_path="",template_folder=os.path.join(rootdir,"templates"))
 
 
 app.config.from_object(Config)

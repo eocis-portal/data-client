@@ -5,6 +5,8 @@
     <link href="/css/style.css" type="text/css" rel="stylesheet"/>
     <script type="text/javascript" src="/js/app.js"></script>
     <script type="text/javascript" src="/js/dt_picker.js"></script>
+    <link rel="stylesheet" href="/bootstrap-5.1.3-dist/css/bootstrap.css" />
+    <script src="/bootstrap-5.1.3-dist/js/bootstrap.js"></script>
     <title>{{title}}</title>
     <script type="text/javascript">
         // template parameters that are substituted into global variables when the page is served
@@ -26,14 +28,42 @@
             crossorigin=""></script>
 </head>
 <body>
-<div class="wrap">
-    <div class="flex-container-vertical">
-        <div class="flex-container">
-            <a href="/"><img class="home_image" style="width:64px;" src="/images/home.svg" alt="home icon" style=margin-left:20px;" class="banner-image"/></a>
-            <div><h1>{{title}}</h1><h2>{{subtitle}}</h2></div>
-            <img src="/images/eocis-logo.png" alt="EOCIS logo" style=margin-left:20px;" class="banner-image"/>
-        </div>
-        <div>
+
+    <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+
+                <a class="navbar-brand" href="#">EOCIS Portal - Data Viewer</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                Related Services
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <li><a class="dropdown-item" href="#">EOCIS Climate Dashboard</a></li>
+                                <li><a class="dropdown-item" href="#">EOCIS Data Viewer</a></li>
+                                <li><a class="dropdown-item" href="#">EO DataHub Home</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <form class="d-flex">
+                        <input id="search_text" class="form-control me-2" type="search" placeholder="Search"
+                               aria-label="Search">
+                        <button id="search_btn" class="btn btn-outline-success">Search</button>
+                    </form>
+                    <img src="images/eocis-logo.png" width="128" style="margin-left:32px;">
+                </div>
+            </div>
+        </nav>
+
+        <div class="row">
             <h2></h2>
             <p>
                 {{summary}}
@@ -42,7 +72,8 @@
                 You may use this page to request data from the <a href="https://eocis.org">EOCIS data store</a>.
             </p>
             <p>
-                This service is supported by the National Centre for Earth Observation (<a target="_blank" href="https://www.nceo.ac.uk">www.nceo.ac.uk</a>).
+                This service is supported by the National Centre for Earth Observation (<a target="_blank"
+                                                                                           href="https://www.nceo.ac.uk">www.nceo.ac.uk</a>).
             </p>
             <p>
                 {{output_formats}}
@@ -63,210 +94,242 @@
             </p>
         </div>
 
+        <hr>
         <div id="dialog" style="display:none;">
             <button id="dialog_content_close" style="margin-right:10px;">X</button>
             <span id="dialog_content">Content</span>
         </div>
 
-        <div id="form">
-            <fieldset id="e_mail">
-                <legend>Submitter Reference</legend>
-                <p><input class="email_input" name="submitter_id" id="submitter_id" tstyle="width:400px;"
-                          value=""
-                          required/>
-                    <span style="margin-left:20px;">
-                        <button id="view_btn" style="margin-left:20px;" disabled>Show My Current Jobs</button>
-                    </span>
-                </p>
-                <fieldset id="joblist" style="display:none;margin-top:30px;">
-                    <legend>My Current Jobs
-                        <button id="refresh_btn" style="margin-left:20px;">Refresh Now</button>
-                    </legend>
-                    <p id="nojobs" style="display:none;">No Jobs Found</p>
-                    <table id="jobtable" style="display:none;">
-                        <thead>
+        <div class="row">
+            <div>
+                <fieldset id="e_mail">
+                    <legend>(1) Submitter Reference</legend>
+                    <p><input class="email_input" name="submitter_id" id="submitter_id" tstyle="width:400px;"
+                              value=""
+                              required/>
+                        <span style="margin-left:20px;">
+                            <button id="view_btn" style="margin-left:20px;" disabled>Show My Current Jobs</button>
+                        </span>
+                    </p>
+                    <fieldset id="joblist" style="display:none;margin-top:30px;">
+                        <legend>My Current Jobs
+                            <button id="refresh_btn" style="margin-left:20px;">Refresh Now</button>
+                        </legend>
+                        <p id="nojobs" style="display:none;">No Jobs Found</p>
+                        <table id="jobtable" style="display:none;">
+                            <thead>
+                            <tr>
+                                <th>Job ID</th>
+                                <th>Submitted</th>
+                                <th>Status</th>
+                                <th>Completion</th>
+                                <th>Expiry</th>
+                            </tr>
+                            </thead>
+                            <tbody id="jobtablebody">
+                            </tbody>
+                        </table>
+                        <p>
+                            View refreshes every 10 minutes. Running Jobs Count (For All Users): <span
+                                id="running_jobs">0</span>
+                        </p>
+                    </fieldset>
+                </fieldset>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div>
+                <fieldset id="parameters">
+                    <legend>(2) Data Request</legend>
+
+                    <table>
                         <tr>
-                            <th>Job ID</th>
-                            <th>Submitted</th>
-                            <th>Status</th>
-                            <th>Completion</th>
-                            <th>Expiry</th>
+                            <td><label class="mainlabel" for="bundle" id="bundle_label">Bundle Name</label></td>
+                            <td colspan="3">
+                                <select name="bundle" id="bundle">
+                                </select>
+                            </td>
                         </tr>
-                        </thead>
-                        <tbody id="jobtablebody">
-                        </tbody>
+                        <tr>
+                            <td><label class="mainlabel" for="bundle" id="variables_label">Variables</label>
+                            </td>
+                            <td colspan="3">
+                                <select name="variables" id="variables" multiple size="5">
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="mainlabel" for="time_step" id="time_step_label">Time
+                                Resolution</label></td>
+                            <td>
+                                <select name="time_step" id="time_step">
+                                </select>
+                            </td>
+                            <td colspan="2">
+                                <div id="n_daily_step_group">
+                                    <label for="n_daily_step" id="n_daily_step_label">N-day period</label>
+                                    <input type="number" name="n_daily_step" id="n_daily_step" min="1" max="365"
+                                           value="5"/>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="mainlabel" for="request_type" id="request_type_label">Request
+                                Type</label></td>
+                            <td colspan="2">
+                                <select name="request_type" id="request_type">
+                                    <option value="timeseries">Time Series</option>
+                                    <option value="gridded">Gridded</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr id="spatial_resolution_group">
+                            <td><label class="mainlabel" for="spatial_resolution" id="spatial_resolution_label">Spatial
+                                Resolution (degrees)</label></td>
+                            <td colspan="2">
+                                <select name="spatial_resolution" id="spatial_resolution">
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label class="mainlabel" for="start_date_year" id="start_date_label">Start
+                                    Date</label>
+                            </td>
+                            <td colspan="2">
+                                <label class="mainlabel" for="start_date_year"
+                                       id="start_date_year_label">Year</label>
+                                <select name="start_date_year" id="start_date_year">
+                                </select>
+
+                                <span id="start_month_controls"><label style="margin-left:20px;"
+                                                                       class="mainlabel"
+                                                                       for="start_date_month"
+                                                                       id="start_date_month_label">Month</label>
+                <select name="start_date_year" id="start_date_month">
+                </select>
+                </span>
+
+                                <span id="start_day_controls"><label style="margin-left:20px;" class="mainlabel"
+                                                                     for="start_date_day"
+                                                                     id="start_date_day_label">Day</label>
+                <select name="start_date_year" id="start_date_day">
+                </select>
+                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label class="mainlabel tooltip" for="end_date_year" id="end_date_label">End
+                                    Date</label>
+                            </td>
+                            <td colspan="2">
+                                <label class="mainlabel" for="end_date_year"
+                                       id="end_date_year_label">Year</label>
+                                <select name="end_date_year" id="end_date_year">
+                                </select>
+
+                                <span id="end_month_controls"><label style="margin-left:20px;" class="mainlabel"
+                                                                     for="end_date_month"
+                                                                     id="end_date_month_label">Month</label>
+                <select name="end_date_year" id="end_date_month">
+                </select>
+                </span>
+
+                                <span id="end_day_controls"><label style="margin-left:20px;" class="mainlabel"
+                                                                   for="end_date_day"
+                                                                   id="end_date_day_label">Day</label>
+                <select name="end_date_year" id="end_date_day">
+                </select>
+                </span>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><label class="mainlabel" for="longitude_min" id="longitude_min_label">Min
+                                Longitude (degrees east)</label></td>
+                            <td><input type="number" value="0" min="-180" max="180" step="any"
+                                       id="longitude_min"/></td>
+                            <td rowspan="4">
+                                <div id="bounding_box_map" style="width:400px;height:250px;"></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="mainlabel" for="longitude_max"
+                                       id="longitude_max_label">Min Longitude (degrees east)</label></td>
+                            <td><input type="number" value="2" min="0.05" step="0.05" id="longitude_max"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="mainlabel" for="latitude_min" id="latitude_min_label">Min Latitude
+                                (degrees north)</label></td>
+                            <td><input type="number" value="0" min="-180" max="180" step="any"
+                                       id="latitude_min"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="mainlabel" for="latitude_max"
+                                       id="latitude_max_label">Max Latitude (degrees north)</label></td>
+                            <td><input type="number" value="2" min="0.05" step="0.05" id="latitude_max"/>
+                            </td>
+                        </tr>
+
+
+                        <tr>
+                            <td><label for="output_format" id="output_format_label">Output file
+                                format</label></td>
+                            <td colspan="2">
+                                <select id="output_format" name="output_format">
+                                </select>
+                            </td>
+                        </tr>
                     </table>
+                </fieldset>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div>
+                <fieldset id="license">
+                    <legend>(3) Consent and Data License</legend>
                     <p>
-                        View refreshes every 10 minutes. Running Jobs Count (For All Users): <span
-                            id="running_jobs">0</span>
+                        <input type="checkbox" id="consent" name="consent"/>
+                        <label for="consent" id="consent_label">
+                            I agree to ...
+                        </label>
                     </p>
                 </fieldset>
-            </fieldset>
-            <fieldset id="parameters">
-                <legend>Data Request</legend>
+                <fieldset id="submit">
+                    <legend>Submit Job</legend>
+                    <p>
+                        <button id="submit_btn" style="font-size:24px; background-color:lightblue;">Submit
+                        </button>
+                    </p>
+                </fieldset>
 
-                <table>
-                    <tr>
-                        <td><label class="mainlabel" for="bundle" id="bundle_label">Bundle Name</label></td>
-                        <td colspan="3">
-                            <select name="bundle" id="bundle">
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><label class="mainlabel" for="bundle" id="variables_label">Variables</label></td>
-                        <td colspan="3">
-                            <select name="variables" id="variables" multiple size="5">
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><label class="mainlabel" for="time_step" id="time_step_label">Time Resolution</label></td>
-                        <td>
-                            <select name="time_step" id="time_step">
-                            </select>
-                        </td>
-                        <td colspan="2">
-                            <div id="n_daily_step_group">
-                                <label for="n_daily_step" id="n_daily_step_label">N-day period</label>
-                                <input type="number" name="n_daily_step" id="n_daily_step" min="1" max="365" value="5"/>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><label class="mainlabel" for="request_type" id="request_type_label">Request Type</label></td>
-                        <td colspan="2">
-                            <select name="request_type" id="request_type">
-                                <option value="timeseries">Time Series</option>
-                                <option value="gridded">Gridded</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr id="spatial_resolution_group">
-                        <td><label class="mainlabel" for="spatial_resolution" id="spatial_resolution_label">Spatial Resolution (degrees)</label></td>
-                        <td colspan="2">
-                            <select name="spatial_resolution" id="spatial_resolution">
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <label class="mainlabel" for="start_date_year" id="start_date_label">Start Date</label>
-                        </td>
-                        <td colspan="2">
-                            <label class="mainlabel" for="start_date_year" id="start_date_year_label">Year</label>
-                            <select name="start_date_year" id="start_date_year">
-                            </select>
-
-                            <span id="start_month_controls"><label style="margin-left:20px;" class="mainlabel"
-                                                                   for="start_date_month"
-                                                                   id="start_date_month_label">Month</label>
-                        <select name="start_date_year" id="start_date_month">
-                        </select>
-                        </span>
-
-                            <span id="start_day_controls"><label style="margin-left:20px;" class="mainlabel"
-                                                                 for="start_date_day" id="start_date_day_label">Day</label>
-                        <select name="start_date_year" id="start_date_day">
-                        </select>
-                        </span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <label class="mainlabel tooltip" for="end_date_year" id="end_date_label">End Date</label>
-                        </td>
-                        <td colspan="2">
-                            <label class="mainlabel" for="end_date_year" id="end_date_year_label">Year</label>
-                            <select name="end_date_year" id="end_date_year">
-                            </select>
-
-                            <span id="end_month_controls"><label style="margin-left:20px;" class="mainlabel"
-                                                                 for="end_date_month"
-                                                                 id="end_date_month_label">Month</label>
-                        <select name="end_date_year" id="end_date_month">
-                        </select>
-                        </span>
-
-                            <span id="end_day_controls"><label style="margin-left:20px;" class="mainlabel"
-                                                               for="end_date_day" id="end_date_day_label">Day</label>
-                        <select name="end_date_year" id="end_date_day">
-                        </select>
-                        </span>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td><label class="mainlabel" for="longitude_min" id="longitude_min_label">Min Longitude (degrees east)</label></td>
-                        <td><input type="number" value="0" min="-180" max="180" step="any"
-                                   id="longitude_min"/></td>
-                        <td rowspan="4">
-                            <div id="bounding_box_map" style="width:400px;height:250px;"></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><label class="mainlabel" for="longitude_max"
-                                   id="longitude_max_label">Min Longitude (degrees east)</label></td>
-                        <td><input type="number" value="2" min="0.05" step="0.05" id="longitude_max"/>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><label class="mainlabel" for="latitude_min" id="latitude_min_label">Min Latitude (degrees north)</label></td>
-                        <td><input type="number" value="0" min="-180" max="180" step="any" id="latitude_min"/>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><label class="mainlabel" for="latitude_max"
-                                   id="latitude_max_label">Max Latitude (degrees north)</label></td>
-                        <td><input type="number" value="2" min="0.05" step="0.05" id="latitude_max"/>
-                        </td>
-                    </tr>
-
-
-                    <tr>
-                        <td><label for="output_format" id="output_format_label">Output file
-                            format</label></td>
-                        <td colspan="2">
-                            <select id="output_format" name="output_format">
-                            </select>
-                        </td>
-                    </tr>
-                </table>
-            </fieldset>
-
-            <fieldset id="license">
-                <legend>Consent and Data License</legend>
+            </div>
+            <div>
                 <p>
-                    <input type="checkbox" id="consent" name="consent"/>
-                    <label for="consent" id="consent_label">
-                        I agree to ...
-                    </label>
+                    For any questions, suggestions or issues with using this service, please contact <a
+                        href="mailto:n.f.mccarroll@reading.ac.uk">n.f.mccarroll@reading.ac.uk</a>.
                 </p>
-            </fieldset>
-            <fieldset id="submit">
-                <legend>Submit Job</legend>
-                <p>
-                    <button id="submit_btn" style="font-size:24px; background-color:lightblue;">Submit</button>
-                </p>
-            </fieldset>
-
+            </div>
         </div>
-        <div>
-            <p>
-                For any questions, suggestions or issues with using this service, please contact <a href="mailto:n.f.mccarroll@reading.ac.uk">n.f.mccarroll@reading.ac.uk</a>.
-            </p>
-        </div>
-        <div class="footer">
-            <fieldset>
-                <legend>Supported By</legend>
-                <a target="_blank" href="https://www.nceo.ac.uk/"><img src="/images/nceo_img_logo_purple.svg" alt="NCEO Logo"
-                                                                      class="footer_image"/></a>
-                <a target="_blank"
-                   href="https://stfc.ukri.org/"><img
-                    src="/images/STFCMediumColourTrans.png" alt="STFC Logo" class="footer_image"/></a>
-            </fieldset>
+        <hr>
+        <div class="row">
+            <div class="footer">
+                <fieldset>
+                    <legend>Supported By</legend>
+                    <a target="_blank" href="https://www.nceo.ac.uk/"><img
+                            src="/images/nceo_img_logo_purple.svg" alt="NCEO Logo"
+                            class="footer_image"/></a>
+                    <a target="_blank"
+                       href="https://stfc.ukri.org/"><img
+                            src="/images/STFCMediumColourTrans.png" alt="STFC Logo" class="footer_image"/></a>
+                </fieldset>
+            </div>
         </div>
     </div>
-</div>
 </body>
 </html>
