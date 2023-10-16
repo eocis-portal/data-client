@@ -28,11 +28,10 @@
             crossorigin=""></script>
 </head>
 <body>
-
     <div class="container-fluid">
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <div class="container-fluid">
-
+                <span id="beta_button" class="badge rounded-pill bg-danger">Beta</span>
                 <a class="navbar-brand" href="#">EOCIS Portal - Data Ordering</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                         data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
@@ -66,7 +65,7 @@
         <div class="row">
             <h2></h2>
             <p>
-                {{summary}}
+                Obtain EOCIS datasets in your chosen spatial and temporal resolution and extent.
             </p>
             <p>
                 You may use this page to request data from the <a href="https://eocis.org">EOCIS data store</a>.
@@ -76,18 +75,18 @@
                                                                                            href="https://www.nceo.ac.uk">www.nceo.ac.uk</a>).
             </p>
             <p>
-                {{output_formats}}
+               The dataset will be prepared in netcdf4, GeoTIFF or CSV format at the temporal and spatial resolution specified in the request form below.
             </p>
             <ol>
-                <li>Enter a submitter reference.</li>
-                <li>Define parameters for your {{service_name}} job.</li>
-                <li>Submit the request.</li>
+                <li style="margin-left:20px;">Enter a submitter reference.</li>
+                <li style="margin-left:20px;">Define parameters for your {{service_name}} job.</li>
+                <li style="margin-left:20px;">Submit the request.</li>
+                <li style="margin-left:20px;">
+                    Check on the status of your jobs and get the download links for any completed jobs,
+                    by returning to this page, by entering your submitter reference into the form below and pressing the
+                    <em>Show My Current Jobs</em> button.
+                </li>
             </ol>
-            <p>
-                * You may also check on the status of your jobs and get the download links for any completed jobs,
-                by returning to this page, by entering your submitter reference into the form below and pressing the
-                <em>Show My Current Jobs</em> button.
-            </p>
             <p>
                 Click on the<img class="icon" src="/images/help.svg" alt="help icon"/>s for additional
                 explanation.
@@ -104,7 +103,8 @@
             <div>
                 <fieldset id="e_mail">
                     <legend>(1) Submitter Reference</legend>
-                    <p><input class="email_input" name="submitter_id" id="submitter_id" tstyle="width:400px;"
+                    <p>This is a string that you can later use to retrieve the status of your jobs.</p>
+                    <p><input name="submitter_id" id="submitter_id" tstyle="width:400px;"
                               value=""
                               required/>
                         <span style="margin-left:20px;">
@@ -143,7 +143,7 @@
                 <fieldset id="parameters">
                     <legend>(2) Data Request</legend>
 
-                    <table>
+                    <table id="control_table">
                         <tr>
                             <td><label class="mainlabel" for="bundle" id="bundle_label">Bundle Name</label></td>
                             <td colspan="3">
@@ -194,8 +194,9 @@
                         </tr>
                         <tr>
                             <td>
-                                <label class="mainlabel" for="start_date_year" id="start_date_label">Start
-                                    Date</label>
+                                <label class="mainlabel" for="start_date_year" id="start_date_label">
+                                    Start Date
+                                </label>
                             </td>
                             <td colspan="2">
                                 <label class="mainlabel" for="start_date_year"
@@ -207,22 +208,25 @@
                                                                        class="mainlabel"
                                                                        for="start_date_month"
                                                                        id="start_date_month_label">Month</label>
-                <select name="start_date_year" id="start_date_month">
-                </select>
-                </span>
+                                <select name="start_date_year" id="start_date_month">
+                                </select>
+                                </span>
 
                                 <span id="start_day_controls"><label style="margin-left:20px;" class="mainlabel"
                                                                      for="start_date_day"
                                                                      id="start_date_day_label">Day</label>
-                <select name="start_date_year" id="start_date_day">
-                </select>
-                </span>
+                                <select name="start_date_year" id="start_date_day">
+                                </select>
+                                </span>
+
                             </td>
                         </tr>
+
                         <tr>
                             <td>
-                                <label class="mainlabel tooltip" for="end_date_year" id="end_date_label">End
-                                    Date</label>
+                                <label class="mainlabel" for="end_date_year" id="end_date_label">
+                                    End Date
+                                </label>
                             </td>
                             <td colspan="2">
                                 <label class="mainlabel" for="end_date_year"
@@ -233,20 +237,32 @@
                                 <span id="end_month_controls"><label style="margin-left:20px;" class="mainlabel"
                                                                      for="end_date_month"
                                                                      id="end_date_month_label">Month</label>
-                <select name="end_date_year" id="end_date_month">
-                </select>
-                </span>
-
+                                <select name="end_date_year" id="end_date_month">
+                                </select>
+                                </span>
                                 <span id="end_day_controls"><label style="margin-left:20px;" class="mainlabel"
-                                                                   for="end_date_day"
-                                                                   id="end_date_day_label">Day</label>
-                <select name="end_date_year" id="end_date_day">
-                </select>
-                </span>
+                                                                                   for="end_date_day"
+                                                                                   id="end_date_day_label">Day</label>
+                                <select name="end_date_year" id="end_date_day">
+                                </select>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label class="mainlabel" for="extent_type" id="extent_type_label">
+                                    Extent
+                                </label>
+                            </td>
+                            <td>
+                                <select id="extent_type">
+                                    <option value="global">Global</option>
+                                    <option value="region">Region</option>
+                                </select>
                             </td>
                         </tr>
 
-                        <tr>
+                        <tr class="region_row">
                             <td><label class="mainlabel" for="longitude_min" id="longitude_min_label">Min
                                 Longitude (degrees east)</label></td>
                             <td><input type="number" value="0" min="-180" max="180" step="any"
@@ -255,26 +271,25 @@
                                 <div id="bounding_box_map" style="width:400px;height:250px;"></div>
                             </td>
                         </tr>
-                        <tr>
+                        <tr class="region_row">
                             <td><label class="mainlabel" for="longitude_max"
                                        id="longitude_max_label">Min Longitude (degrees east)</label></td>
                             <td><input type="number" value="2" min="0.05" step="0.05" id="longitude_max"/>
                             </td>
                         </tr>
-                        <tr>
+                        <tr class="region_row">
                             <td><label class="mainlabel" for="latitude_min" id="latitude_min_label">Min Latitude
                                 (degrees north)</label></td>
                             <td><input type="number" value="0" min="-180" max="180" step="any"
                                        id="latitude_min"/>
                             </td>
                         </tr>
-                        <tr>
+                        <tr class="region_row">
                             <td><label class="mainlabel" for="latitude_max"
                                        id="latitude_max_label">Max Latitude (degrees north)</label></td>
                             <td><input type="number" value="2" min="0.05" step="0.05" id="latitude_max"/>
                             </td>
                         </tr>
-
 
                         <tr>
                             <td><label for="output_format" id="output_format_label">Output file
@@ -296,7 +311,7 @@
                     <p>
                         <input type="checkbox" id="consent" name="consent"/>
                         <label for="consent" id="consent_label">
-                            I agree to ...
+                            I agree to ... (License to be populated dependent on dataset)
                         </label>
                     </p>
                 </fieldset>

@@ -196,9 +196,7 @@ class App:
                                service_name="EOCIS data service",
                                start_year=start_year, start_month=start_month, end_year=end_year, end_month=end_month,
                                default_start_year=default_start_year, default_start_month=default_start_month,
-                               default_end_year=default_end_year, default_end_month=default_end_month,
-                               output_formats="The dataset will be prepared in netcdf4 format at the temporal and spatial resolution specified in the request form below.",
-                               summary="Obtain L4 sea and ocean surface temperature datasets in your chosen spatial and temporal resolution.")
+                               default_end_year=default_end_year, default_end_month=default_end_month)
 
 
 

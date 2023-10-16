@@ -1,7 +1,7 @@
 body {
     font-family: 'Roboto', sans-serif;
     font-size: 16px;
-    margin: 20;
+    margin: 20px;
 }
 
 div.wrap {
@@ -77,6 +77,10 @@ table#jobtable td {
   padding: 5px;
 }
 
+table#control_table td {
+        min-width: 300px;
+}
+
 table#jobtable th {
   border: 1px solid black;
   padding: 5px;
@@ -91,4 +95,8 @@ table#jobtable th {
   flex-grow: 0;
   align-content: flex-end;
   text-align: center;
+}
+
+#beta_button {
+  margin-right: 10px;
 }

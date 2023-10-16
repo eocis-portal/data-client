@@ -71,6 +71,8 @@ class Form {
 
         this.output_format = $("output_format");
 
+        this.extent_type = $("extent_type");
+
         this.requestTypeUpdated();
 
         // bounding box
@@ -120,6 +122,9 @@ class Form {
         // keep a housekeeping list of all controls which have been reported as invalid
         this.alerted_controls = [];
 
+        this.addHelp("bundle_label","Select a group of related EOCIS dataset(s)")
+        this.addHelp("variables_label","Select one or more variables within the chosen bundle")
+
         // configure help on each control - set the tooltip text
         this.addHelp("time_step_label","The target time resolution can be annual, monthly, dekadal (3 per month), or pentadal (6 per month). The final dekad or pentad per month then addresses a variable number of days. Alternatively, strict N-day averaging period can be requested, aligned with years, such that only the last period per year may address a number of days not equal to N.");
 
@@ -129,7 +134,7 @@ class Form {
         this.addHelp("consent","You must consent to...");
 
         // regrid specific
-        this.addHelp("spatial_resolution_label","Select the target latitude resolution.");
+        this.addHelp("spatial_resolution_label","Select the target spatial resolution.");
 
         // time series/region specific
         this.addHelp("longitude_min_label","Set the degrees of longitude of the western edge of the bounding box over which the data will be computed.");
@@ -140,6 +145,9 @@ class Form {
         // time series specific
         this.addHelp("output_format_label","Choose the output format.");
 
+        // extent
+        this.addHelp("extent_type","Select the spatial extent of the data.");
+
         // set up event handlers on most of the controls
         // the handlers will typically enable, reconfigure or disable other controls, or clear validity reports
 
@@ -149,6 +157,9 @@ class Form {
             }
         });
 
+        this.extent_type.addEventListener("change", ev => {
+            this.updateExtentType();
+        });
 
         this.time_step.addEventListener("change", function() {
             if (that.time_step.value != "N-daily") {
@@ -225,6 +236,8 @@ class Form {
         this.updateControlVisibility();
 
         this.loadBundles();
+
+        this.updateExtentType();
     }
 
     loadBundles() {
@@ -260,6 +273,14 @@ class Form {
             elt.setAttribute("value",variable.id);
             this.variables.appendChild(elt);
         });
+    }
+
+    updateExtentType() {
+        let row_style = "table-row";
+        if (this.extent_type.value == "global") {
+           row_style = "display:none;"
+        }
+        document.querySelectorAll(".region_row").forEach(elt => elt.setAttribute("style",row_style));
     }
 
     setSpatialResolution(spatial_resolutions) {
@@ -746,10 +767,12 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
                 "END_DAY": end_date.getDate()
             }
 
-            spec["LON_MIN"] = Number.parseFloat(this.longitude_min.value);
-            spec["LAT_MIN"] = Number.parseFloat(this.latitude_min.value);
-            spec["LON_MAX"] = Number.parseFloat(this.longitude_max.value);
-            spec["LAT_MAX"] = Number.parseFloat(this.latitude_max.value);
+            if (this.extent_type.value == "region") {
+                spec["LON_MIN"] = Number.parseFloat(this.longitude_min.value);
+                spec["LAT_MIN"] = Number.parseFloat(this.latitude_min.value);
+                spec["LON_MAX"] = Number.parseFloat(this.longitude_max.value);
+                spec["LAT_MAX"] = Number.parseFloat(this.latitude_max.value);
+            }
 
             spec["OUTPUT_FORMAT"] = this.output_format.value;
 
