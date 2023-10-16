@@ -143,10 +143,11 @@ class Form {
         this.addHelp("latitude_max_label","Set the degrees of latitude of the northern edge of the bounding box over which the data will be computed.");
 
         // time series specific
-        this.addHelp("output_format_label","Choose the output format.");
+        this.addHelp("request_type_label","Choose the type of request to make.  A Time Series request returns a single timeseries.  A Gridded request returns a spatiotemporal dataset.");
+        this.addHelp("output_format_label","Choose the output format, appropriate for the type of request.");
 
         // extent
-        this.addHelp("extent_type","Select the spatial extent of the data.");
+        this.addHelp("extent_type_label","Select the spatial extent of the data.");
 
         // set up event handlers on most of the controls
         // the handlers will typically enable, reconfigure or disable other controls, or clear validity reports
