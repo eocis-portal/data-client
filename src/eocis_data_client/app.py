@@ -34,7 +34,7 @@ from eocis_data_manager.job import Job
 from eocis_data_manager.config import Config
 from eocis_data_manager.time_steps import TimeSteps
 
-from job_formatter import get_html_description
+from eocis_data_client.job_formatter import get_html_description
 
 # flask initialisation and configuration (see config.py)
 
@@ -79,7 +79,7 @@ def collect_download_links(job_id: str):
     output_path = os.path.join(Config.OUTPUT_PATH, job_id)
     for filename in os.listdir(output_path):
         if filename.endswith(".zip"):
-            links.append((filename, "/outputs/" + job_id + "/" + filename))
+            links.append((filename, Config.DATA_URL_PREFIX + "/" + job_id + "/" + filename))
     return links
 
 GENERIC_ERROR = "An internal error occurred and it was not possible to complete your request."

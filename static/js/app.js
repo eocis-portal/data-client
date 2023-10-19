@@ -242,7 +242,7 @@ class Form {
     }
 
     loadBundles() {
-        fetch("/metadata/bundles").then(r => r.json()).then(obj => this.setBundles(obj));
+        fetch("data/metadata/bundles").then(r => r.json()).then(obj => this.setBundles(obj));
     }
 
     setBundles(bundle_list) {
@@ -260,7 +260,7 @@ class Form {
     }
 
     loadBundle(bundle_id) {
-        fetch("/metadata/bundles/"+bundle_id).then(r => r.json()).then(obj => {
+        fetch("data/metadata/bundles/"+bundle_id).then(r => r.json()).then(obj => {
             this.setVariables(obj["variables"]);
             this.setSpatialResolution(obj["spatial_resolutions"]);
             this.setTemporalResolution(obj["temporal_resolutions"]);
@@ -407,7 +407,7 @@ class Form {
     refreshJobList() {
         if (this.job_view_open) {
             var that = this;
-            fetch('/view.json',{
+            fetch('data/view.json',{
                 method: 'POST',
                 mode: 'same-origin',
                 cache: 'no-cache',
@@ -575,7 +575,7 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
         img_ele.setAttribute("title",help_text);
         img_ele.setAttribute("alt",help_text);
         img_ele.setAttribute("class","icon");
-        img_ele.setAttribute("src","/images/help.svg");
+        img_ele.setAttribute("src","data/images/help.svg");
         img_ele.setAttribute("tabindex","0");
 
         var that = this;
@@ -779,11 +779,9 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
 
             spec["SPATIAL_RESOLUTION"] = this.spatial_resolution.value;
 
-            alert(JSON.stringify(spec));
-
             // console.log("Posting job with spec: "+JSON.stringify(spec,null,2));
 
-            fetch('/submit.json',{
+            fetch('data/submit.json',{
                 method: 'POST',
                 mode: 'same-origin',
                 cache: 'no-cache',
