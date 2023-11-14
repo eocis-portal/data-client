@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="date-range-picker.js"></script>
+    <script src="test-date-range-picker.js"></script>
+    <style>
+        select:invalid {
+            color: red;
+            border: 2px solid red;
+        }
+    </style>
+</head>
+<body onload="test()">
+<h1>Date Picker Test</h1>
+
+<h2>Date Picker Controls</h2>
+<table>
+    <tr>
+        <td>
+            <label class="mainlabel" for="start_date_year" id="start_date_label">Start Date</label>
+        </td>
+        <td colspan="2">
+            <label class="mainlabel" for="start_date_year" id="start_date_year_label">Year</label>
+            <select id="start_date_year" name="start_date_year">
+            </select>
+
+            <span id="start_month_controls"><label class="mainlabel" for="start_date_month"
+                                                   id="start_date_month_label"
+                                                   style="margin-left:20px;">Month</label>
+                    <select id="start_date_month" name="start_date_year">
+            </select>
+            </span>
+
+            <span id="start_day_controls"><label class="mainlabel" for="start_date_day"
+                                                 id="start_date_day_label" style="margin-left:20px;">Day</label>
+            <select id="start_date_day" name="start_date_year">
+            </select>
+            </span>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <label class="mainlabel tooltip" for="end_date_year" id="end_date_label">End Date</label>
+        </td>
+        <td colspan="2">
+            <label class="mainlabel" for="end_date_year" id="end_date_year_label">Year</label>
+            <select id="end_date_year" name="end_date_year">
+            </select>
+
+            <span id="end_month_controls">
+                <label class="mainlabel" for="end_date_month"
+                                                 id="end_date_month_label"
+                                                 style="margin-left:20px;">Month</label>
+                <select id="end_date_month" name="end_date_year">
+                </select>
+            </span>
+
+            <span id="end_day_controls">
+                <label class="mainlabel" for="end_date_day"
+                                               id="end_date_day_label" style="margin-left:20px;">Day</label>
+                <select id="end_date_day" name="end_date_year">
+                </select>
+            </span>
+        </td>
+    </tr>
+</table>
+
+<h2>Change Time Step for Test</h2>
+
+<select id="change_time_step" value="daily">
+    <option value="annual">Yearly</option>
+    <option value="seasonal">Seasonal</option>
+    <option value="monthly">Monthly</option>
+    <option value="10-day">10-Day</option>
+    <option value="5-day">5-Day</option>
+    <option value="daily">Daily</option>
+</select>
+
+<h2>Change Start and End Date Range for Test</h2>
+
+<label for="period_start_date">Start Range Date</label>
+<input type="date" id="period_start_date" value="2010-01-01">
+<label for="period_end_date">End Range Date</label>
+<input type="date" id="period_end_date" value="2020-12-31">
+
+<h2>Test Period</h2>
+
+<pre id="test_period"></pre>
+
+</body>
+</html>
