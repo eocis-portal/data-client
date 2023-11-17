@@ -150,7 +150,7 @@ class date_range_picker {
         }
     }
 
-    configure(first_year, first_month, first_day, last_year, last_month, last_day) {
+    configure(first_year, first_month, first_day, last_year, last_month, last_day, time_period) {
         this.first_year = first_year;
         this.first_month = first_month;
         this.first_day = first_day;
@@ -164,7 +164,7 @@ class date_range_picker {
         if (this.first_date > this.last_date) {
             throw "Configuration failed.  First date must be not be after last date.";
         }
-        this.change_timestep("daily");
+        this.change_timestep(time_period);
     }
 
     is_valid_start(dt) {

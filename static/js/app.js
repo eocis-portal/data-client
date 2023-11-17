@@ -97,9 +97,9 @@ class Form {
         this.start_date_year = ""
         this.dt_picker = new dt_picker("start_date_year", "start_date_month", "start_month_controls", "start_date_day", "start_day_controls",
                 "end_date_year", "end_date_month", "end_month_controls", "end_date_day", "end_day_controls");
-        this.last_day = this.dt_picker.getDaysInMonth(""+end_year, ""+end_month);
-        this.dt_picker.configureYearMonthPickers(start_year,start_month, 1, end_year, end_month, 31, "daily");
-        this.dt_picker.defineCallback((start,end) => {
+        this.last_day = this.dt_picker.get_days_in_month(end_year, end_month);
+        this.dt_picker.configure(start_year,start_month, 1, end_year, end_month, 31, "daily");
+        this.dt_picker.define_callback((start,end) => {
             console.log(start + " => " + end);
         });
 

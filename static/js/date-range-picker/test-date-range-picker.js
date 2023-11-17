@@ -28,14 +28,14 @@ function test() {
         'end_date_year', 'end_date_month', 'end_month_controls', 'end_date_day', 'end_day_controls');
 
     var change_time_step = document.getElementById("change_time_step");
-    change_time_step.addEventListener("change",function(evt) {
-       let value = change_time_step.value;
-       try {
-           picker.change_timestep(value);
-       } catch(ex) {
-           alert(ex);
-           change_time_step.value = picker.time_step;
-       }
+    change_time_step.addEventListener("change", function (evt) {
+        let value = change_time_step.value;
+        try {
+            picker.change_timestep(value);
+        } catch (ex) {
+            alert(ex);
+            change_time_step.value = picker.time_step;
+        }
     });
 
     var period_start_date = document.getElementById("period_start_date");
@@ -44,20 +44,19 @@ function test() {
         let period_start_dt = new Date(period_start_date.value + 'T00:00:00.000Z');
         let period_end_dt = new Date(period_end_date.value + 'T00:00:00.000Z');
         let time_step = change_time_step.value;
-        picker.configure(period_start_dt.getFullYear(),period_start_dt.getMonth()+1,period_start_dt.getDate(),
-            period_end_dt.getFullYear(),period_end_dt.getMonth()+1,period_end_dt.getDate(), time_step);
+        picker.configure(period_start_dt.getFullYear(), period_start_dt.getMonth() + 1, period_start_dt.getDate(),
+            period_end_dt.getFullYear(), period_end_dt.getMonth() + 1, period_end_dt.getDate(), time_step);
         change_time_step.value = picker.time_step;
     }
-    period_start_date.addEventListener("change",range_callback);
-    period_end_date.addEventListener("change",range_callback);
+    period_start_date.addEventListener("change", range_callback);
+    period_end_date.addEventListener("change", range_callback);
 
-    picker.define_callback((start,end) => {
+    picker.define_callback((start, end) => {
         const start_str = start ? start.toUTCString() : "undefined";
         const end_str = end ? end.toUTCString() : "undefined";
         document.getElementById("test_period").innerText = start_str + " => " + end_str;
     });
 
 
-    picker.configure(2010,1, 1, 2020, 12, 31);
-    picker.change_timestep(change_time_step.value);
+    picker.configure(2010, 1, 1, 2020, 12, 31, change_time_step.value);
 }
