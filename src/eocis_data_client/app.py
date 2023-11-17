@@ -50,17 +50,6 @@ output_folder = app.config["OUTPUT_PATH"]
 # obtain the persistent store
 store = Store(app.config["DATABASE_PATH"])
 
-start_year = app.config["START_YEAR"]
-start_month = app.config["START_MONTH"]
-end_year = app.config["END_YEAR"]
-end_month = app.config["END_MONTH"]
-
-default_start_year = app.config["DEFAULT_START_YEAR"]
-default_start_month = app.config["DEFAULT_START_MONTH"]
-default_end_year = app.config["DEFAULT_END_YEAR"]
-default_end_month = app.config["DEFAULT_END_MONTH"]
-
-
 task_quota = app.config["TASK_QUOTA"]
 job_quota = app.config["JOB_QUOTA"]
 
@@ -120,6 +109,10 @@ class App:
             App.logger.exception("submit")
             return jsonify({"message": GENERIC_ERROR})
 
+    @staticmethod
+    @app.route('/data/submit.json', methods=['POST'])
+    def submit_debug():
+        return App.submit()
 
     @staticmethod
     @app.route('/view.json', methods=['POST'])
@@ -133,7 +126,6 @@ class App:
             with JobOperations(store) as t:
                 running_job_count = t.count_jobs_by_state([Job.STATE_RUNNING])
                 jobs = t.list_jobs_by_submitter_id(submitter_id)
-                jm = JobManager(store)
                 for job in jobs:
                     job_detail = job.serialise(t)
                     job_detail["html_description"] = get_html_description(job)
@@ -146,6 +138,11 @@ class App:
         except:
             App.logger.exception("view")
             return jsonify({"jobs": [], "running_jobs": "?"})
+
+    @staticmethod
+    @app.route('/data/view.json', methods=['POST'])
+    def view_debug():
+        return App.view()
 
     ####################################################################################################################
     # Service static files
@@ -161,9 +158,13 @@ class App:
         return jsonify(bundles)
 
     @staticmethod
+    @app.route('/data/metadata/bundles', methods=['GET'])
+    def get_bundles_debug():
+        return App.get_bundles()
+
+    @staticmethod
     @app.route('/metadata/bundles/<bundle_id>', methods=['GET'])
     def get_variables(bundle_id=None):
-
         with SchemaOperations(store) as t:
             bundle = t.get_bundle(bundle_id)
             spatial_resolutions = []
@@ -173,15 +174,29 @@ class App:
             for resolution in bundle.spec["temporal_resolutions"]:
                 temporal_resolutions.append([resolution,TIME_STEP_LABELS[TimeSteps(resolution)]])
 
+            start_date = None
+            end_date = None
             variables = []
             for ds_id in bundle.dataset_ids:
                 ds = t.get_dataset(ds_id)
                 for variable in ds.variables:
                     variable_id = ds.dataset_id + ":" + variable.variable_id
                     variables.append({"id":variable_id,"variable_name":variable.variable_name,"dataset_name":ds.dataset_name})
+                    if start_date is None or ds.start_date < start_date:
+                        start_date = ds.start_date
+                    if end_date is None or ds.end_date > end_date:
+                        end_date = ds.end_date
+
         return jsonify({"variables":variables,
                         "spatial_resolutions": spatial_resolutions,
-                        "temporal_resolutions": temporal_resolutions})
+                        "temporal_resolutions": temporal_resolutions,
+                        "start_date": start_date.strftime("%Y-%m-%d"),
+                        "end_date": end_date.strftime("%Y-%m-%d")})
+
+    @staticmethod
+    @app.route('/data/metadata/bundles/<bundle_id>', methods=['GET'])
+    def get_variables_debug(bundle_id=None):
+        return App.get_variables(bundle_id)
 
     ####################################################################################################################
     # Service static files
@@ -193,12 +208,7 @@ class App:
     def fetch():
         """Serve the main page containing the regridding form"""
         return render_template('app.html', title="EOCIS Data", subtitle="Service",
-                               service_name="EOCIS data service",
-                               start_year=start_year, start_month=start_month, end_year=end_year, end_month=end_month,
-                               default_start_year=default_start_year, default_start_month=default_start_month,
-                               default_end_year=default_end_year, default_end_month=default_end_month)
-
-
+                               service_name="EOCIS data service")
 
 
     @staticmethod
@@ -208,16 +218,34 @@ class App:
         return send_from_directory(os.path.join(rootdir,'static','css'), path)
 
     @staticmethod
+    @app.route('/data/css/<path:path>', methods=['GET'])
+    def send_css_debug(path):
+        """serve CSS files, debug env"""
+        return App.send_css(path)
+
+    @staticmethod
     @app.route('/js/<path:path>', methods=['GET'])
     def send_js(path):
         """serve JS files"""
         return send_from_directory(os.path.join(rootdir,'static','js'), path)
 
     @staticmethod
+    @app.route('/data/js/<path:path>', methods=['GET'])
+    def send_js_debug(path):
+        """serve JS files, debug env"""
+        return App.send_js(path)
+
+    @staticmethod
     @app.route('/images/<path:path>', methods=['GET'])
     def send_images(path):
         """serve image files"""
         return send_from_directory(os.path.join(rootdir,'static','images'), path)
+
+    @staticmethod
+    @app.route('/data/images/<path:path>', methods=['GET'])
+    def send_images_debug(path):
+        """serve image files, debug env"""
+        return App.send_images(path)
 
     @staticmethod
     @app.route('/favicon.ico', methods=['GET'])
@@ -233,6 +261,11 @@ class App:
             return send_from_directory(output_folder, path)
         else:
             abort(404)
+
+    @staticmethod
+    @app.route('/joboutput/<path:path>', methods=['GET'])
+    def send_data_debug(path):
+        return App.send_data(path)
 
     @app.errorhandler(404)
     def page_not_found(error):

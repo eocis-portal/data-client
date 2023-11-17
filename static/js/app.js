@@ -85,23 +85,10 @@ class Form {
         this.requested_lat = 0.0;
         this.requested_lon = 0.0;
 
-        // define the year range over which valid input data is available.
-        // first year may not have data available from the first month.
-        // start_year, start_month and end_year are globals that are set up from template parameters in app.html
-        this.first_year = start_year;
-        this.first_month = start_month;
-        this.last_month = end_month;
-        this.last_year = end_year;
-
-
-        this.start_date_year = ""
-        this.dt_picker = new dt_picker("start_date_year", "start_date_month", "start_month_controls", "start_date_day", "start_day_controls",
+        this.dt_picker = new date_range_picker("start_date_year", "start_date_month", "start_month_controls", "start_date_day", "start_day_controls",
                 "end_date_year", "end_date_month", "end_month_controls", "end_date_day", "end_day_controls");
-        this.last_day = this.dt_picker.get_days_in_month(end_year, end_month);
-        this.dt_picker.configure(start_year,start_month, 1, end_year, end_month, 31, "daily");
-        this.dt_picker.define_callback((start,end) => {
-            console.log(start + " => " + end);
-        });
+
+
 
 
         this.consent = $("consent");
@@ -168,7 +155,7 @@ class Form {
                 // on the N daily period that will be become non-focusable
                 that.removeAlert(that.daily_time_step);
             }
-            that.dt_picker.changeTimeStep(that.time_step.value);
+            that.dt_picker.change_timestep(that.time_step.value);
         });
 
 
@@ -264,6 +251,10 @@ class Form {
             this.setVariables(obj["variables"]);
             this.setSpatialResolution(obj["spatial_resolutions"]);
             this.setTemporalResolution(obj["temporal_resolutions"]);
+            // start_date end_date format is YYYY-MM-DD
+            let start_date = new Date(obj["start_date"]);
+            let end_date = new Date(obj["end_date"]);
+            this.dt_picker.configure(start_date.getFullYear(),start_date.getMonth()+1, start_date.getDate(), end_date.getFullYear(), end_date.getMonth()+1, end_date.getDate(), this.time_step.value);
         });
     }
 
@@ -353,17 +344,6 @@ class Form {
     // -----------------------------------------------------------------------------------------------------------------
     // form setup and configuration
     //
-
-    setStartEndDefaults() {
-        this.dt_picker.configureYearMonthPickers(
-            default_start_year,
-            default_start_month,
-            1,
-            default_end_year,
-            default_end_month,
-            this.getDaysInMonth(default_end_year,default_end_month),
-            "5-day");
-    }
 
     updateControlVisibility() {
         // show or hide certain controls based on the current form settings
@@ -458,7 +438,7 @@ class Form {
                 var total_tasks = new_tasks + running_tasks + completed_tasks + failed_tasks;
 
                 // we will rename NEW jobs or RUNNING jobs where no tasks have yet started, to QUEUED
-                if (job["state"] == "NEW" || (job["state"] == "RUNNING" && (running_tasks+completed_tasks+failed_tasks == 0))) {
+                if (job["state"] == "NEW") {
                     job["state"] = "QUEUED";
                 }
 
