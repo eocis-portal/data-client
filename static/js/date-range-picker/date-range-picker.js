@@ -139,7 +139,7 @@ class date_range_picker {
     callback() {
         let start_date = this.get_start_date();
         let end_date = this.get_end_date();
-        if (start_date <= end_date) {
+        if (this.checkValid(start_date, end_date)) {
             if (this.callback_fn) {
                 this.callback_fn(start_date, end_date);
             }
@@ -288,11 +288,11 @@ class date_range_picker {
 
     get_valid_start_years() {
        // work out the range of end years to allow for selection
-        let end_dt = this.get_end_date();
+
         let years = [];
         for (let year = this.first_year; year <= this.last_year; year++) {
             let dt = new Date(Date.UTC(year,this.start_month-1,this.start_day));
-            if (dt >= this.first_date && dt <= end_dt) {
+            if (dt >= this.first_date && dt <= this.last_date) {
                 years.push(year);
             }
         }
@@ -301,11 +301,10 @@ class date_range_picker {
 
     get_valid_end_years() {
         // work out the range of end years to allow for selection
-        let start_dt = this.get_start_date();
         let years = [];
         for (let year = this.first_year; year <= this.last_year; year++) {
             let dt = new Date(Date.UTC(year,this.end_month-1,this.end_day));
-            if (dt >= start_dt && dt <= this.last_date) {
+            if (dt >= this.first_date && dt <= this.last_date) {
                 years.push(year);
             }
         }
@@ -326,12 +325,10 @@ class date_range_picker {
                 months = this.allmonths;
                 break;
         }
-
-        let end_dt = this.get_end_date();
         let valid_months = [];
         months.forEach(month => {
             let d = new Date(Date.UTC(this.start_year,month-1, this.start_day));
-            if (d >= this.first_date && d <= end_dt) {
+            if (d >= this.first_date && d <= this.last_date) {
                 valid_months.push(month);
             }
         });
@@ -353,7 +350,6 @@ class date_range_picker {
                 break;
         }
 
-        let start_dt = this.get_start_date();
         let valid_months = [];
         months.forEach(month => {
             let day = this.end_day;
@@ -361,7 +357,7 @@ class date_range_picker {
                 day = this.get_days_in_month(this.end_year, month);
             }
             let d = new Date(Date.UTC(this.end_year,month-1, day));
-            if (d >= start_dt && d <= this.last_date) {
+            if (d <= this.last_date && d >= this.first_date) {
                 valid_months.push(month);
             }
         });
@@ -389,11 +385,10 @@ class date_range_picker {
                 break;
         }
 
-        let end_dt = this.get_end_date();
         let valid_days = [];
         days.forEach(day => {
             let d = new Date(Date.UTC(this.start_year,this.start_month-1, day));
-            if (d >= this.first_date && d <= end_dt) {
+            if (d >= this.first_date && d <= this.last_date) {
                 valid_days.push(day);
             }
         });
@@ -424,11 +419,10 @@ class date_range_picker {
                 break;
         }
 
-        let start_dt = this.get_start_date();
         let valid_days = [];
         days.forEach(day => {
             let d = new Date(Date.UTC(this.end_year,this.end_month-1, day));
-            if (d >= start_dt && d <= this.last_date) {
+            if (d >= this.first_date && d <= this.last_date) {
                 valid_days.push(day);
             }
         });
@@ -522,5 +516,60 @@ class date_range_picker {
         // passing 0 as the day-in-month should return the last day in the previous month
         let last_day_dt = new Date(year,next_month,0);
         return last_day_dt.getDate();
+    }
+
+    checkValid(start_date, end_date) {
+        this.removeAlert();
+        // checks on the start and end date
+        if (start_date >= end_date) {
+           // if the start date is greater than the end date, its a bit tricky to figure out which of the
+           // year / month / day pickers to report an error on...
+           let sy = Number.parseInt(this.start_date_year.value);
+           let sm = Number.parseInt(this.start_date_month.value);
+           let sd = Number.parseInt(this.start_date_day.value);
+           let ey = Number.parseInt(this.end_date_year.value);
+           let em = Number.parseInt(this.end_date_month.value);
+           let ed = Number.parseInt(this.end_date_day.value);
+
+           let alert_control = null;
+           switch(this.time_step.value) {
+                case "annual":
+                    alert_control = this.end_date_year;
+                    break;
+                case "monthly":
+                case "seasonal":
+                    if (sy > ey) {
+                        alert_control = this.end_date_year;
+                    } else {
+                        alert_control = this.end_date_month;
+                    }
+                    break;
+                default:
+                    if (sy > ey) {
+                        alert_control = this.end_date_year;
+                    } else if (sm > em) {
+                        alert_control = this.end_date_month;
+                    } else {
+                        alert_control = this.end_date_day;
+                    }
+                    break;
+           }
+           alert_control.setCustomValidity("Start date must be before end date");
+           alert_control.reportValidity();
+           this.alerted_control = alert_control;
+           return false;
+        } else {
+            return true;
+        }
+    }
+
+    removeAlert() {
+        // clear a validity alert on a control and remove it from the list of controls
+        // used when a control is about to go out of focus
+        if (this.alerted_control) {
+            this.alerted_control.setCustomValidity("");
+            this.alerted_control.reportValidity();
+            this.alerted_control = null;
+        }
     }
 }
