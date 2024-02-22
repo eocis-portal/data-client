@@ -169,11 +169,13 @@ class App:
             bundle = t.get_bundle(bundle_id)
             spatial_resolutions = []
             temporal_resolutions = []
+
             for resolution in bundle.spec["spatial_resolutions"]:
                 spatial_resolutions.append([resolution,resolution])
             for resolution in bundle.spec["temporal_resolutions"]:
                 temporal_resolutions.append([resolution,TIME_STEP_LABELS[TimeSteps(resolution)]])
-
+            extent = bundle.spec["bounds"]
+            license = bundle.spec["license"]
             start_date = None
             end_date = None
             variables = []
@@ -191,7 +193,9 @@ class App:
                         "spatial_resolutions": spatial_resolutions,
                         "temporal_resolutions": temporal_resolutions,
                         "start_date": start_date.strftime("%Y-%m-%d"),
-                        "end_date": end_date.strftime("%Y-%m-%d")})
+                        "end_date": end_date.strftime("%Y-%m-%d"),
+                        "extent": extent,
+                        "license": license})
 
     @staticmethod
     @app.route('/data/metadata/bundles/<bundle_id>', methods=['GET'])

@@ -150,7 +150,7 @@
                                 </select>
                             </td>
                         </tr>
-                        <tr>
+                        <tr style="display:none;">
                             <td><label class="mainlabel" for="time_step" id="time_step_label">Time
                                 Resolution</label></td>
                             <td>
@@ -165,17 +165,17 @@
                                 </div>
                             </td>
                         </tr>
-                        <tr>
+                        <tr style="display:none;">
                             <td><label class="mainlabel" for="request_type" id="request_type_label">Request
                                 Type</label></td>
                             <td colspan="2">
                                 <select name="request_type" id="request_type">
                                     <option value="timeseries">Time Series</option>
-                                    <option value="gridded">Gridded</option>
+                                    <option value="gridded" selected>Gridded</option>
                                 </select>
                             </td>
                         </tr>
-                        <tr id="spatial_resolution_group">
+                        <tr style="display:none;" id="spatial_resolution_group">
                             <td><label class="mainlabel" for="spatial_resolution" id="spatial_resolution_label">Spatial
                                 Resolution (degrees)</label></td>
                             <td colspan="2">
@@ -239,7 +239,7 @@
                                 </span>
                             </td>
                         </tr>
-                        <tr>
+                        <tr style="display:none;">
                             <td>
                                 <label class="mainlabel" for="extent_type" id="extent_type_label">
                                     Extent
@@ -248,7 +248,7 @@
                             <td>
                                 <select id="extent_type">
                                     <option value="global">Global</option>
-                                    <option value="region">Region</option>
+                                    <option value="region" selected>Region</option>
                                 </select>
                             </td>
                         </tr>
@@ -264,7 +264,7 @@
                         </tr>
                         <tr class="region_row">
                             <td><label class="mainlabel" for="longitude_max"
-                                       id="longitude_max_label">Min Longitude (degrees east)</label></td>
+                                       id="longitude_max_label">Max Longitude (degrees east)</label></td>
                             <td><input type="number" value="2" min="0.05" step="0.05" id="longitude_max"/>
                             </td>
                         </tr>
@@ -302,7 +302,7 @@
                     <p>
                         <input type="checkbox" id="consent" name="consent"/>
                         <label for="consent" id="consent_label">
-                            I agree to ... (License to be populated dependent on dataset)
+                            I agree to use the data according to the license: <span id="license_text"></span>
                         </label>
                     </p>
                 </fieldset>

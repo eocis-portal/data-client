@@ -88,9 +88,6 @@ class Form {
         this.dt_picker = new date_range_picker("start_date_year", "start_date_month", "start_month_controls", "start_date_day", "start_day_controls",
                 "end_date_year", "end_date_month", "end_month_controls", "end_date_day", "end_day_controls");
 
-
-
-
         this.consent = $("consent");
         this.submit_btn = $("submit_btn");
 
@@ -104,7 +101,6 @@ class Form {
         this.jobtablebody = $("jobtablebody");
         this.runningjobs = $("running_jobs");
         this.refresh_btn = $("refresh_btn");
-
 
         // keep a housekeeping list of all controls which have been reported as invalid
         this.alerted_controls = [];
@@ -251,6 +247,8 @@ class Form {
             this.setVariables(obj["variables"]);
             this.setSpatialResolution(obj["spatial_resolutions"]);
             this.setTemporalResolution(obj["temporal_resolutions"]);
+            this.setExtent(obj["extent"]);
+            this.setLicense(obj["license"]);
             // start_date end_date format is YYYY-MM-DD
             let start_date = new Date(obj["start_date"]);
             let end_date = new Date(obj["end_date"]);
@@ -259,6 +257,7 @@ class Form {
     }
 
     setVariables(variable_list) {
+        this.variables.innerHTML = "";
         variable_list.forEach((variable) => {
             let elt = document.createElement("option");
             elt.appendChild(document.createTextNode(variable.dataset_name+"/"+variable.variable_name));
@@ -267,9 +266,21 @@ class Form {
         });
     }
 
+    setExtent(extent) {
+        this.longitude_min.value = ""+extent.minx;
+        this.longitude_max.value = ""+extent.maxx;
+        this.latitude_min.value = ""+extent.miny;
+        this.latitude_max.value = ""+extent.maxy;
+        this.updateBoundingBox();
+    }
+
+    setLicense(license) {
+        $("license_text").innerHTML = license;
+    }
+
     updateExtentType() {
         let row_style = "table-row";
-        if (this.extent_type.value == "global") {
+        if (this.extent_type.value === "global") {
            row_style = "display:none;"
         }
         document.querySelectorAll(".region_row").forEach(elt => elt.setAttribute("style",row_style));
@@ -285,11 +296,11 @@ class Form {
 
     requestTypeUpdated() {
         if (this.request_type.value == "timeseries") {
-            this.hideRow(this.spatial_resolution_group);
+            // this.hideRow(this.spatial_resolution_group);
             this.configureSelect("output_format",[["csv","CSV"],["netcdf","NetCDF4"]],true,true);
         } else {
-            this.showRow(this.spatial_resolution_group);
-            this.configureSelect("output_format",[["geotiff","GeoTIFF"],["netcdf","NetCDF4"]],true,true);
+            // this.showRow(this.spatial_resolution_group);
+            this.configureSelect("output_format",[["netcdf","NetCDF4"],["geotiff","GeoTIFF"]],true,true);
         }
     }
 
@@ -658,14 +669,14 @@ this.makeTwoDigits(""+d.getHours()) + ":" + this.makeTwoDigits(""+d.getMinutes()
         }
         this.alerted_controls = [];
 
-        // basic checks (consent/citation optins and e-mail address)
+        // basic checks (consent/citation options and e-mail address)
         if (!this.submitter_id.validity.valid) {
             this.submitter_id.setCustomValidity("Please use a valid submitter id");
             this.submitter_id.reportValidity();
             this.alerted_controls.push(this.submitter_id);
         }
         if (!this.consent.checked) {
-            this.consent.setCustomValidity("You must consent to having your e-mail address stored");
+            this.consent.setCustomValidity("You must consent to the Data License");
             this.consent.reportValidity();
             this.alerted_controls.push(this.consent);
         }
